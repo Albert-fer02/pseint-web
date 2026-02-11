@@ -22,11 +22,11 @@ export function AiTutorPanel({ source, parserError, insights }: AiTutorPanelProp
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-col items-start justify-between gap-2 sm:flex-row sm:items-center">
         <Button type="button" onClick={runAnalysis} disabled={status === 'loading'}>
           {status === 'loading' ? 'Analizando...' : 'Analizar con IA'}
         </Button>
-        <p className="text-xs text-muted-foreground">Gemini-first con fallback (OpenAI y mock local).</p>
+        <p className="text-xs leading-relaxed text-muted-foreground">Gemini-first con fallback (OpenAI y mock local).</p>
       </div>
 
       {error ? <p className="rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p> : null}

@@ -1,4 +1,4 @@
-import { lazy, Suspense, useMemo, useState } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import type { RuntimeInputField } from '@/entities/pseint/model/types'
 import { ProgramInsightsPanel } from '@/features/analysis/ui/ProgramInsightsPanel'
 import { AiTutorPanel } from '@/features/ai/ui/AiTutorPanel'
@@ -28,11 +28,21 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/sha
 const MermaidChart = lazy(() => import('@/shared/lib/mermaid/MermaidChart'))
 
 const initialExerciseId = practiceExercises[0]?.id ?? ''
+type MobilePanelKey = 'practice' | 'inputs' | 'insights' | 'output' | 'diagram' | 'ai'
+const mobilePanels: Array<{ key: MobilePanelKey; label: string }> = [
+  { key: 'practice', label: 'Practica' },
+  { key: 'inputs', label: 'Entradas' },
+  { key: 'output', label: 'Salida' },
+  { key: 'insights', label: 'Metricas' },
+  { key: 'diagram', label: 'Diagrama' },
+  { key: 'ai', label: 'Tutor IA' },
+]
 
 export function PlaygroundPage() {
   const [source, setSource] = useState(defaultProgram)
   const [inputs, setInputs] = useState<Record<string, string>>(defaultInputs)
   const [selectedExerciseId, setSelectedExerciseId] = useState(initialExerciseId)
+  const [mobilePanel, setMobilePanel] = useState<MobilePanelKey>('practice')
   const [practiceProgress, setPracticeProgress] = useState<PracticeProgress>(() => loadPracticeProgress())
 
   const { run, reset, status, result, error } = usePseintRuntime()
@@ -170,13 +180,16 @@ export function PlaygroundPage() {
       ) {
         markExerciseCompleted(selectedExercise.id)
       }
+      setMobilePanel('output')
     } catch {
       // runtime errors are already reflected in hook state
+      setMobilePanel('output')
     }
   }
 
   const runButtonText = status === 'running' ? 'Ejecutando...' : 'Ejecutar programa'
   const isRunDisabled = status === 'running' || Boolean(parserError)
+  const panelClass = (panel: MobilePanelKey) => (mobilePanel === panel ? 'block' : 'hidden md:block')
 
   return (
     <div className="space-y-5 pb-[calc(env(safe-area-inset-bottom)+6.5rem)] md:pb-0">
@@ -217,11 +230,15 @@ export function PlaygroundPage() {
                 {parserHint ? <p className="text-xs text-amber-700/90">Sugerencia: {parserHint}</p> : null}
               </div>
             ) : null}
+
+            <div className="md:hidden">
+              <MobilePanelTabs active={mobilePanel} onChange={setMobilePanel} />
+            </div>
           </CardContent>
         </Card>
 
         <div className="space-y-5">
-          <Card>
+          <Card className={panelClass('practice')}>
             <CardHeader>
               <CardTitle>Modo practica guiada</CardTitle>
               <CardDescription>Elige un ejercicio, intenta resolverlo y sigue tu progreso.</CardDescription>
@@ -285,7 +302,7 @@ export function PlaygroundPage() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className={panelClass('inputs')}>
             <CardHeader>
               <CardTitle>Entradas</CardTitle>
               <CardDescription>Valores para las sentencias Leer.</CardDescription>
@@ -304,7 +321,7 @@ export function PlaygroundPage() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className={panelClass('insights')}>
             <CardHeader>
               <CardTitle>Datos automaticos</CardTitle>
               <CardDescription>Metricas de complejidad, nivel y recomendaciones segun tu codigo.</CardDescription>
@@ -318,7 +335,7 @@ export function PlaygroundPage() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className={panelClass('ai')}>
             <CardHeader>
               <CardTitle>Tutor IA</CardTitle>
               <CardDescription>Feedback pedagogico contextual y accionable.</CardDescription>
@@ -328,7 +345,7 @@ export function PlaygroundPage() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className={panelClass('output')}>
             <CardHeader>
               <CardTitle>Salida de ejecucion</CardTitle>
               <CardDescription>Consola y estado final de variables.</CardDescription>
@@ -343,7 +360,7 @@ export function PlaygroundPage() {
         </div>
       </div>
 
-      <Card>
+      <Card className={panelClass('diagram')}>
         <CardHeader>
           <CardTitle>Diagrama de flujo</CardTitle>
           <CardDescription>Se actualiza automaticamente al cambiar el codigo.</CardDescription>
@@ -380,6 +397,41 @@ function MobileRunDock({
   statusText: string
   hasParserError: boolean
 }) {
+  const [isKeyboardOpen, setIsKeyboardOpen] = useState(false)
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return
+    }
+
+    const viewport = window.visualViewport
+    if (!viewport) {
+      return
+    }
+
+    const updateKeyboardState = () => {
+      const active = document.activeElement
+      const isTypingTarget = active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement || active instanceof HTMLSelectElement
+      const shrunkViewport = viewport.height < window.innerHeight * 0.8
+      setIsKeyboardOpen(isTypingTarget && shrunkViewport)
+    }
+
+    updateKeyboardState()
+    viewport.addEventListener('resize', updateKeyboardState)
+    window.addEventListener('focusin', updateKeyboardState)
+    window.addEventListener('focusout', updateKeyboardState)
+
+    return () => {
+      viewport.removeEventListener('resize', updateKeyboardState)
+      window.removeEventListener('focusin', updateKeyboardState)
+      window.removeEventListener('focusout', updateKeyboardState)
+    }
+  }, [])
+
+  if (isKeyboardOpen) {
+    return null
+  }
+
   return (
     <div className="surface-scrim fixed inset-x-0 bottom-0 z-20 border-t border-border px-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-3 sm:px-4 md:hidden">
       <p className="mb-2 text-center text-[11px] text-muted-foreground">
@@ -388,6 +440,33 @@ function MobileRunDock({
       <Button type="button" className="w-full" onClick={() => void onRun()} disabled={disabled}>
         {statusText}
       </Button>
+    </div>
+  )
+}
+
+function MobilePanelTabs({
+  active,
+  onChange,
+}: {
+  active: MobilePanelKey
+  onChange: (panel: MobilePanelKey) => void
+}) {
+  return (
+    <div className="-mx-1 overflow-x-auto px-1 pb-1 mobile-panel-tabs">
+      <div className="flex min-w-max items-center gap-2">
+        {mobilePanels.map((panel) => (
+          <Button
+            key={panel.key}
+            type="button"
+            variant={active === panel.key ? 'secondary' : 'outline'}
+            size="sm"
+            className="shrink-0"
+            onClick={() => onChange(panel.key)}
+          >
+            {panel.label}
+          </Button>
+        ))}
+      </div>
     </div>
   )
 }

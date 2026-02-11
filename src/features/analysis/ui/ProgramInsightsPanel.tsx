@@ -16,7 +16,7 @@ export function ProgramInsightsPanel({ insights }: ProgramInsightsPanelProps) {
         <Badge variant="outline">Score: {insights.complexityScore}/10</Badge>
       </div>
 
-      <div className="grid grid-cols-2 gap-2 text-sm md:grid-cols-3">
+      <div className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2 md:grid-cols-3">
         <MetricItem label="Lineas" value={String(insights.totalLines)} />
         <MetricItem label="Codigo" value={String(insights.codeLines)} />
         <MetricItem label="Comentarios" value={String(insights.commentLines)} />
