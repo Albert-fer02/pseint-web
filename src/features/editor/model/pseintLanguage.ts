@@ -1,3 +1,4 @@
+import { autocompletion, completeFromList, type Completion } from '@codemirror/autocomplete'
 import { HighlightStyle, StreamLanguage, syntaxHighlighting } from '@codemirror/language'
 import type { StreamParser } from '@codemirror/language'
 import { tags } from '@lezer/highlight'
@@ -24,6 +25,66 @@ const KEYWORDS = new Set([
 
 const TYPES = new Set(['cadena', 'entero', 'real', 'logico', 'caracter'])
 const FUNCTIONS = new Set(['subcadena', 'longitud', 'mayusculas', 'minusculas'])
+
+const completionItems: Completion[] = [
+  ...Array.from(KEYWORDS).map((keyword) => ({
+    label: keyword,
+    type: 'keyword',
+    apply: keyword[0]?.toUpperCase() + keyword.slice(1),
+  })),
+  ...Array.from(TYPES).map((typeName) => ({
+    label: typeName,
+    type: 'type',
+    apply: typeName[0]?.toUpperCase() + typeName.slice(1),
+  })),
+  ...Array.from(FUNCTIONS).map((fn) => ({
+    label: fn,
+    type: 'function',
+    apply: `${fn[0]?.toUpperCase() + fn.slice(1)}()`,
+  })),
+  {
+    label: 'si bloque',
+    type: 'keyword',
+    detail: 'bloque condicional',
+    apply: 'Si  Entonces\n    \nFinSi',
+  },
+  {
+    label: 'si-sino bloque',
+    type: 'keyword',
+    detail: 'bloque condicional completo',
+    apply: 'Si  Entonces\n    \nSino\n    \nFinSi',
+  },
+  {
+    label: 'para bloque',
+    type: 'keyword',
+    detail: 'ciclo para',
+    apply: 'Para i <- 1 Hasta 10 Con Paso 1 Hacer\n    \nFinPara',
+  },
+  {
+    label: 'mientras bloque',
+    type: 'keyword',
+    detail: 'ciclo mientras',
+    apply: 'Mientras  Hacer\n    \nFinMientras',
+  },
+  {
+    label: 'definir ejemplo',
+    type: 'keyword',
+    detail: 'declarar variable',
+    apply: 'Definir variable Como Entero;',
+  },
+  {
+    label: 'escribir ejemplo',
+    type: 'keyword',
+    detail: 'salida por consola',
+    apply: 'Escribir "";',
+  },
+  {
+    label: 'leer ejemplo',
+    type: 'keyword',
+    detail: 'entrada de usuario',
+    apply: 'Leer variable;',
+  },
+]
 
 const parser: StreamParser<null> = {
   token(stream) {
@@ -81,6 +142,11 @@ const parser: StreamParser<null> = {
 }
 
 export const pseintLanguage = StreamLanguage.define(parser)
+export const pseintAutocompletion = autocompletion({
+  override: [completeFromList(completionItems)],
+  activateOnTyping: true,
+  maxRenderedOptions: 14,
+})
 
 export const pseintHighlighting = syntaxHighlighting(
   HighlightStyle.define([
