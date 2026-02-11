@@ -1,6 +1,5 @@
 import { useAiTutor } from '@/features/ai/hooks/useAiTutor'
 import type { ProgramInsights } from '@/entities/pseint/model/types'
-import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 
 interface AiTutorPanelProps {
@@ -26,18 +25,13 @@ export function AiTutorPanel({ source, parserError, insights }: AiTutorPanelProp
         <Button type="button" onClick={runAnalysis} disabled={status === 'loading'}>
           {status === 'loading' ? 'Analizando...' : 'Analizar con IA'}
         </Button>
-        <p className="text-xs leading-relaxed text-muted-foreground">Gemini-first con fallback (OpenAI y mock local).</p>
+        <p className="text-xs leading-relaxed text-muted-foreground">Recibe sugerencias claras para mejorar tu solucion.</p>
       </div>
 
       {error ? <p className="rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p> : null}
 
       {result ? (
         <div className="space-y-3">
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge variant="secondary">Proveedor: {result.provider}</Badge>
-            {result.fromCache ? <Badge variant="outline">cache</Badge> : null}
-          </div>
-
           <div className="rounded-lg border border-border bg-muted/35 p-3">
             <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Resumen</p>
             <p className="text-sm text-foreground">{result.feedback.summary}</p>

@@ -1,5 +1,5 @@
 import CodeMirror from '@uiw/react-codemirror'
-import { keymap } from '@codemirror/view'
+import { EditorView, keymap } from '@codemirror/view'
 import { pseintHighlighting, pseintLanguage } from '@/features/editor/model/pseintLanguage'
 import { useTheme } from '@/app/providers/ThemeProvider'
 
@@ -20,6 +20,7 @@ export function PseudocodeEditor({ value, onChange, onRunShortcut }: PseudocodeE
         extensions={[
           pseintLanguage,
           pseintHighlighting,
+          EditorView.lineWrapping,
           keymap.of([
             {
               key: 'Mod-Enter',

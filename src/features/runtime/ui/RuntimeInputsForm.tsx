@@ -17,7 +17,7 @@ export function RuntimeInputsForm({ fields, values, onChange }: RuntimeInputsFor
     <div className="space-y-3">
       {fields.map((field) => (
         <label key={field.name} className="block space-y-1.5">
-          <span className="flex items-center gap-2 text-sm font-medium text-foreground">
+          <span className="flex flex-wrap items-center gap-2 text-sm font-medium text-foreground">
             {field.name}
             <Badge variant="outline">{field.varType}</Badge>
           </span>

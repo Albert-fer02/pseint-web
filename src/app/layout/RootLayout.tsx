@@ -1,6 +1,5 @@
 import { Outlet } from '@tanstack/react-router'
 import { ThemeToggle } from '@/features/theme/ui/ThemeToggle'
-import { Badge } from '@/shared/ui/badge'
 
 export function RootLayout() {
   return (
@@ -13,16 +12,15 @@ export function RootLayout() {
       </a>
 
       <header className="sticky top-0 z-30 border-b border-border/80 bg-background/95 md:bg-background/85 md:backdrop-blur">
-        <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-3 px-3 py-3 sm:px-4 md:px-6 md:py-4">
-          <div className="space-y-1">
+        <div className="relative mx-auto flex w-full max-w-7xl flex-col gap-3 px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-4 md:px-6 md:py-4">
+          <div className="min-w-0 pr-24 space-y-1 sm:pr-0">
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">PSeInt Lab</p>
-            <h1 className="text-lg font-semibold tracking-tight sm:text-xl md:text-2xl">Editor + Ejecucion + Diagrama</h1>
+            <h1 className="text-base font-semibold leading-tight tracking-tight sm:text-xl md:text-2xl">
+              Editor, ejecucion y diagrama
+            </h1>
           </div>
 
-          <div className="flex items-center gap-3">
-            <Badge variant="secondary" className="hidden md:inline-flex">
-              Arquitectura escalable
-            </Badge>
+          <div className="absolute right-3 top-3 sm:static sm:right-auto sm:top-auto">
             <ThemeToggle />
           </div>
         </div>

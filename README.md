@@ -35,7 +35,15 @@ Validacion de calidad:
 bun run lint
 bun run typecheck
 bun run test
+bun run test:e2e
 bun run build
+bun run check:bundle
+```
+
+Pipeline local completo:
+
+```bash
+bun run ci
 ```
 
 ## Deploy en GitHub Pages
@@ -43,6 +51,12 @@ bun run build
 - El workflow esta en `.github/workflows/deploy-pages.yml`.
 - Hace deploy automatico al hacer `push` a `main`.
 - El `base` se calcula automaticamente en CI con el nombre del repo.
+- Antes de publicar, ejecuta quality gates (`typecheck`, `lint`, `test`, `build`, `check:bundle`).
+
+CI general:
+
+- `.github/workflows/ci.yml` valida lo mismo en `push` y `pull_request`.
+- `.github/workflows/e2e-mobile.yml` corre regresiones responsive en viewport movil con Playwright.
 
 Pasos:
 
@@ -90,8 +104,10 @@ Incluye tokens, motion, ergonomia movil, checklist de accesibilidad y reglas de 
 ## Notas de escalabilidad
 
 - Runtime aislado en worker para no bloquear UI.
-- Mermaid cargado con lazy import.
+- Mermaid cargado con lazy import y con hidratacion diferida en el panel de diagrama.
+- Analisis de codigo desacoplado de la escritura (deferred rendering) para evitar jank.
 - AI Orchestrator con chain de proveedores (`gemini -> openai -> mock`) y cache local por contenido.
+- Budgets de bundle automatizados para evitar regresiones de performance.
 - Seguridad: la integracion actual es client-side para prototipo; en produccion usar backend para proteger llaves.
 - Proximo paso recomendado:
   - lazy load del editor para bajar TTI inicial

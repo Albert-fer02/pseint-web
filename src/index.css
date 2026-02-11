@@ -129,6 +129,11 @@ body,
   min-height: 100%;
 }
 
+html {
+  overflow-x: clip;
+  scroll-padding-top: 5rem;
+}
+
 body {
   margin: 0;
   min-width: 320px;
@@ -145,7 +150,23 @@ body {
   -webkit-text-size-adjust: 100%;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  line-height: 1.5;
+  line-height: 1.6;
+  overflow-x: clip;
+}
+
+@supports not (overflow: clip) {
+  html,
+  body {
+    overflow-x: hidden;
+  }
+}
+
+img,
+video,
+canvas,
+iframe {
+  max-inline-size: 100%;
+  block-size: auto;
 }
 
 @media (pointer: coarse) {
@@ -165,28 +186,23 @@ body {
   transition-timing-function: var(--motion-ease-spring);
 }
 
-.surface-scrim {
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--background) 92%, transparent) 0%,
-    color-mix(in srgb, var(--background) 64%, transparent) 100%
-  );
-}
-
-@media (max-width: 767px) {
-  .surface-scrim {
-    background: color-mix(in srgb, var(--background) 96%, transparent);
-  }
+.mermaid-chart {
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 0.25rem;
 }
 
 .mermaid-chart svg {
+  display: block;
   width: 100%;
+  max-inline-size: none;
   height: auto;
 }
 
 @media (max-width: 767px) {
   .mermaid-chart svg {
-    min-width: 640px;
+    min-inline-size: 520px;
   }
 }
 
@@ -205,6 +221,14 @@ body {
     --editor-height: clamp(16rem, 48dvh, 29rem);
   }
 
+  .cm-gutters {
+    display: none;
+  }
+
+  .cm-content {
+    padding-left: 0.5rem;
+  }
+
   .cm-editor,
   .cm-scroller {
     font-size: 14px;
@@ -218,14 +242,6 @@ body {
   textarea {
     font-size: 16px;
   }
-}
-
-.mobile-panel-tabs {
-  scrollbar-width: none;
-}
-
-.mobile-panel-tabs::-webkit-scrollbar {
-  display: none;
 }
 
 .cm-editor,
