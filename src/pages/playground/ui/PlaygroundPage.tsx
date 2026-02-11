@@ -230,7 +230,7 @@ export function PlaygroundPage() {
               <label className="block space-y-1.5">
                 <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Ejercicio</span>
                 <select
-                  className="h-11 w-full rounded-lg border border-border bg-card px-3 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  className="h-11 w-full rounded-lg border border-border bg-card px-3 text-base text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring md:text-sm"
                   value={selectedExerciseId}
                   onChange={(event) => setSelectedExerciseId(event.target.value)}
                 >
@@ -381,7 +381,7 @@ function MobileRunDock({
   hasParserError: boolean
 }) {
   return (
-    <div className="surface-scrim fixed inset-x-0 bottom-0 z-20 border-t border-border px-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-3 backdrop-blur sm:px-4 md:hidden">
+    <div className="surface-scrim fixed inset-x-0 bottom-0 z-20 border-t border-border px-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-3 sm:px-4 md:hidden">
       <p className="mb-2 text-center text-[11px] text-muted-foreground">
         {hasParserError ? 'Corrige el error de parseo para ejecutar.' : 'Accion principal en zona ergonomica (pulgar).'}
       </p>

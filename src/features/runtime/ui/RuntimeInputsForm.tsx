@@ -23,6 +23,7 @@ export function RuntimeInputsForm({ fields, values, onChange }: RuntimeInputsFor
           </span>
           <Input
             type="text"
+            className="text-base md:text-sm"
             value={values[field.name] ?? ''}
             onChange={(event) => onChange(field.name, event.target.value)}
             placeholder={`Ingresa ${field.name}`}

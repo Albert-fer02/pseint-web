@@ -12,7 +12,7 @@ export function RootLayout() {
         Saltar al contenido
       </a>
 
-      <header className="sticky top-0 z-30 border-b border-border/80 bg-background/85 backdrop-blur">
+      <header className="sticky top-0 z-30 border-b border-border/80 bg-background/95 md:bg-background/85 md:backdrop-blur">
         <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-3 px-3 py-3 sm:px-4 md:px-6 md:py-4">
           <div className="space-y-1">
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">PSeInt Lab</p>

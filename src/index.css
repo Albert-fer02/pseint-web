@@ -141,6 +141,8 @@ body {
   background-attachment: fixed;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
+  text-size-adjust: 100%;
+  -webkit-text-size-adjust: 100%;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -148,6 +150,8 @@ body {
 @media (pointer: coarse) {
   body {
     background-attachment: scroll;
+    -webkit-font-smoothing: auto;
+    text-rendering: auto;
   }
 }
 
@@ -196,8 +200,16 @@ body {
 
   .cm-editor,
   .cm-scroller {
-    font-size: 13px;
-    line-height: 1.45;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+}
+
+@media (max-width: 767px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px;
   }
 }
 
