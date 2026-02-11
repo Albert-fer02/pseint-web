@@ -13,10 +13,10 @@ export function PseudocodeEditor({ value, onChange, onRunShortcut }: PseudocodeE
   const { theme } = useTheme()
 
   return (
-    <div className="overflow-hidden rounded-xl border border-border bg-card">
+    <div className="pseint-editor-shell overflow-hidden rounded-xl border border-border bg-card">
       <CodeMirror
         value={value}
-        height="520px"
+        height="var(--editor-height)"
         extensions={[
           pseintLanguage,
           pseintHighlighting,

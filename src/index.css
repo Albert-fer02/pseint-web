@@ -145,6 +145,12 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+@media (pointer: coarse) {
+  body {
+    background-attachment: scroll;
+  }
+}
+
 ::selection {
   background: color-mix(in srgb, var(--primary) 30%, transparent);
 }
@@ -165,6 +171,34 @@ body {
 .mermaid-chart svg {
   width: 100%;
   height: auto;
+}
+
+@media (max-width: 767px) {
+  .mermaid-chart svg {
+    min-width: 640px;
+  }
+}
+
+.pseint-editor-shell {
+  --editor-height: clamp(19rem, 54vh, 33rem);
+}
+
+@supports (height: 100dvh) {
+  .pseint-editor-shell {
+    --editor-height: clamp(18rem, 56dvh, 33rem);
+  }
+}
+
+@media (max-width: 640px) {
+  .pseint-editor-shell {
+    --editor-height: clamp(16rem, 48dvh, 29rem);
+  }
+
+  .cm-editor,
+  .cm-scroller {
+    font-size: 13px;
+    line-height: 1.45;
+  }
 }
 
 .cm-editor,

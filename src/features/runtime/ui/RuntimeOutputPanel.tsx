@@ -1,4 +1,5 @@
 import type { RuntimeExecution } from '@/entities/pseint/model/types'
+import { getPseintErrorHint } from '@/shared/lib/pseint/errorHints'
 
 interface RuntimeOutputPanelProps {
   execution: RuntimeExecution | null
@@ -12,8 +13,12 @@ export function RuntimeOutputPanel({ execution, error, status }: RuntimeOutputPa
   }
 
   if (error) {
+    const hint = getPseintErrorHint(error)
     return (
-      <p className="rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>
+      <div className="space-y-2 rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2">
+        <p className="text-sm text-destructive">{error}</p>
+        {hint ? <p className="text-xs text-destructive/90">Sugerencia: {hint}</p> : null}
+      </div>
     )
   }
 
@@ -34,7 +39,9 @@ export function RuntimeOutputPanel({ execution, error, status }: RuntimeOutputPa
 
       <div className="rounded-xl border border-border bg-card p-3">
         <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Variables finales</p>
-        <pre className="overflow-x-auto text-xs text-foreground/90">{JSON.stringify(execution.variables, null, 2)}</pre>
+        <pre className="max-h-64 overflow-auto whitespace-pre-wrap break-words text-xs text-foreground/90">
+          {JSON.stringify(execution.variables, null, 2)}
+        </pre>
       </div>
     </div>
   )

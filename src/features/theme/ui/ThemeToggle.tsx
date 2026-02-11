@@ -14,7 +14,7 @@ export function ThemeToggle() {
         onClick={() => setTheme('light')}
         aria-label="Activar modo claro"
         aria-pressed={theme === 'light'}
-        className="h-8 rounded-lg px-3"
+        className="rounded-lg px-3"
       >
         <Sun className="h-4 w-4" />
         Claro
@@ -26,7 +26,7 @@ export function ThemeToggle() {
         onClick={() => setTheme('oled')}
         aria-label="Activar modo OLED dark"
         aria-pressed={theme === 'oled'}
-        className="h-8 rounded-lg px-3"
+        className="rounded-lg px-3"
       >
         <MoonStar className="h-4 w-4" />
         OLED

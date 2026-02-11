@@ -55,7 +55,7 @@ export function MermaidChart({ chart }: MermaidChartProps) {
     return <p className="text-sm text-muted-foreground">Generando diagrama...</p>
   }
 
-  return <div className="mermaid-chart" dangerouslySetInnerHTML={{ __html: svg }} />
+  return <div className="mermaid-chart overflow-x-auto" dangerouslySetInnerHTML={{ __html: svg }} />
 }
 
 export default MermaidChart
