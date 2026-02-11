@@ -17,6 +17,7 @@ export function usePseintRuntime() {
 
   const run = useCallback(async (source: string, inputs: Record<string, string>) => {
     setStatus('running')
+    setResult(null)
     setError(null)
 
     const worker = new Worker(new URL('@/workers/pseintRuntime.worker.ts', import.meta.url), {
@@ -31,7 +32,7 @@ export function usePseintRuntime() {
       },
     }
 
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<RuntimeSuccess>((resolve, reject) => {
       worker.onmessage = (event: MessageEvent<WorkerResponse>) => {
         const response = event.data
 
@@ -40,7 +41,7 @@ export function usePseintRuntime() {
           setResult(response.payload)
           setError(null)
           worker.terminate()
-          resolve()
+          resolve(response.payload)
           return
         }
 
@@ -64,8 +65,15 @@ export function usePseintRuntime() {
     })
   }, [])
 
+  const reset = useCallback(() => {
+    setStatus('idle')
+    setResult(null)
+    setError(null)
+  }, [])
+
   return {
     run,
+    reset,
     status,
     result,
     error,
