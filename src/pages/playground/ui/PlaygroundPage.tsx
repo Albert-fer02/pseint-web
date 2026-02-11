@@ -51,7 +51,7 @@ export function PlaygroundPage() {
   const deferredSource = useDeferredValue(source)
   const [inputs, setInputs] = useState<Record<string, string>>(defaultInputs)
   const [selectedExerciseId, setSelectedExerciseId] = useState(initialExerciseId)
-  const [mobilePanel, setMobilePanel] = useState<MobilePanelKey>('practice')
+  const [mobilePanel, setMobilePanel] = useState<MobilePanelKey>('inputs')
   const [practiceProgress, setPracticeProgress] = useState<PracticeProgress>(() => loadPracticeProgress())
   const hasMountedMobilePanelEffectRef = useRef(false)
   const diagramSectionRef = useRef<HTMLDivElement | null>(null)
