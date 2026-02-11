@@ -187,23 +187,18 @@ iframe {
 }
 
 .mermaid-chart {
-  overflow-x: auto;
-  overscroll-behavior-x: contain;
+  overflow: auto;
+  overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
   padding-bottom: 0.25rem;
+  touch-action: pan-x pan-y;
 }
 
-.mermaid-chart svg {
+.mermaid-stage svg {
   display: block;
   width: 100%;
   max-inline-size: none;
   height: auto;
-}
-
-@media (max-width: 767px) {
-  .mermaid-chart svg {
-    min-inline-size: 520px;
-  }
 }
 
 .pseint-editor-shell {

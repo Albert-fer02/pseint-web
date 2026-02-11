@@ -775,7 +775,7 @@ export function PlaygroundPage() {
 
             <div className="min-h-0 flex-1 overflow-auto p-3 md:p-5">
               <Suspense fallback={<p className="text-sm text-muted-foreground">Cargando renderer de diagramas...</p>}>
-                <MermaidChart chart={flowchartPreview} />
+                <MermaidChart chart={flowchartPreview} expanded />
               </Suspense>
             </div>
           </div>
