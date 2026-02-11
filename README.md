@@ -71,13 +71,18 @@ Importante:
 ## Funcionalidades MVP
 
 - Editor de pseudocodigo con ejemplo precargado.
+- Autosave por proyecto en localStorage (crear, renombrar, eliminar y cambiar de proyecto).
+- Carga de ejemplos rapidos desde selector.
 - Resaltado de sintaxis PSeInt (keywords, tipos, funciones, operadores, comentarios, strings).
+- Autocompletado PSeInt con snippets rapidos.
+- Formateo basico de pseudocodigo.
 - Atajo de ejecucion `Ctrl/Cmd + Enter`.
 - Deteccion de entradas a partir de `Leer`.
 - Parser y runtime basico (`Definir`, `Leer`, `Escribir`, asignaciones, `Si/Sino`, `Subcadena`).
 - Salida de consola y snapshot de variables finales.
 - Analisis automatico en vivo: nivel (`Basico/Intermedio/Avanzado`), complejidad, nesting, ciclomatica y recomendaciones.
 - Diagrama de flujo live generado desde AST mientras editas.
+- Vista expandida del diagrama para mobile.
 - Tema visual persistido en `localStorage`.
 - Dock movil con accion principal en zona ergonomica inferior.
 - Tutor IA (Gemini-first) con fallback OpenAI y fallback mock local.

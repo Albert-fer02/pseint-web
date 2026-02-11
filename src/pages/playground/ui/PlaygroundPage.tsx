@@ -3,6 +3,14 @@ import type { RuntimeInputField } from '@/entities/pseint/model/types'
 import { PseudocodeEditor } from '@/features/editor/ui/PseudocodeEditor'
 import { usePseintRuntime } from '@/features/runtime/hooks/usePseintRuntime'
 import { defaultInputs, defaultProgram } from '@/features/runtime/model/defaultProgram'
+import { examplePrograms, getExampleProgramById } from '@/features/runtime/model/examplePrograms'
+import {
+  createNextProjectName,
+  createPlaygroundProject,
+  loadPlaygroundWorkspace,
+  savePlaygroundWorkspace,
+  type PlaygroundProject,
+} from '@/features/runtime/model/projects'
 import {
   createDefaultPracticeProgressEntry,
   getPracticeExerciseById,
@@ -16,6 +24,7 @@ import { RuntimeInputsForm } from '@/features/runtime/ui/RuntimeInputsForm'
 import { RuntimeOutputPanel } from '@/features/runtime/ui/RuntimeOutputPanel'
 import { extractInputFields } from '@/shared/lib/pseint/analyzer'
 import { getPseintErrorHint } from '@/shared/lib/pseint/errorHints'
+import { formatPseintSource } from '@/shared/lib/pseint/formatter'
 import { buildFlowchart } from '@/shared/lib/pseint/flowchart'
 import { analyzeProgram } from '@/shared/lib/pseint/insights'
 import { parseProgram } from '@/shared/lib/pseint/parser'
@@ -41,15 +50,35 @@ const mobilePanels: Array<{ key: MobilePanelKey; label: string }> = [
 ]
 const MOBILE_PANEL_SCROLL_ID_PREFIX = 'mobile-panel'
 const MOBILE_KEYBOARD_DELTA_THRESHOLD = 140
+const AUTOSAVE_DELAY_MS = 450
+
+const quickSnippets: Array<{ id: string; label: string; content: string }> = [
+  { id: 'si', label: 'Si', content: 'Si condicion Entonces\n    \nFinSi' },
+  { id: 'si-sino', label: 'Si/Sino', content: 'Si condicion Entonces\n    \nSino\n    \nFinSi' },
+  { id: 'para', label: 'Para', content: 'Para i <- 1 Hasta 10 Con Paso 1 Hacer\n    \nFinPara' },
+  { id: 'mientras', label: 'Mientras', content: 'Mientras condicion Hacer\n    \nFinMientras' },
+  { id: 'escribir', label: 'Escribir', content: 'Escribir "";' },
+]
+
+const initialWorkspace = loadPlaygroundWorkspace({
+  fallbackSource: defaultProgram,
+  fallbackInputs: defaultInputs,
+})
+const initialActiveProject =
+  initialWorkspace.projects.find((project) => project.id === initialWorkspace.activeProjectId) ?? initialWorkspace.projects[0]
+const initialExampleId = examplePrograms[0]?.id ?? ''
 
 function getMobilePanelSectionId(panel: MobilePanelKey): string {
   return `${MOBILE_PANEL_SCROLL_ID_PREFIX}-${panel}`
 }
 
 export function PlaygroundPage() {
-  const [source, setSource] = useState(defaultProgram)
+  const [projects, setProjects] = useState<PlaygroundProject[]>(() => initialWorkspace.projects)
+  const [activeProjectId, setActiveProjectId] = useState(() => initialWorkspace.activeProjectId)
+  const [source, setSource] = useState(initialActiveProject.source)
   const deferredSource = useDeferredValue(source)
-  const [inputs, setInputs] = useState<Record<string, string>>(defaultInputs)
+  const [inputs, setInputs] = useState<Record<string, string>>(initialActiveProject.inputs)
+  const [selectedExampleId, setSelectedExampleId] = useState(initialExampleId)
   const [selectedExerciseId, setSelectedExerciseId] = useState(initialExerciseId)
   const [mobilePanel, setMobilePanel] = useState<MobilePanelKey>('inputs')
   const [practiceProgress, setPracticeProgress] = useState<PracticeProgress>(() => loadPracticeProgress())
@@ -57,6 +86,7 @@ export function PlaygroundPage() {
   const diagramSectionRef = useRef<HTMLDivElement | null>(null)
   const isDesktop = useMediaQuery('(min-width: 768px)')
   const [shouldHydrateDiagram, setShouldHydrateDiagram] = useState(false)
+  const [isDiagramExpanded, setIsDiagramExpanded] = useState(false)
 
   const { run, reset, status, result, error } = usePseintRuntime()
 
@@ -69,6 +99,8 @@ export function PlaygroundPage() {
 
     return getPracticeProgressEntry(practiceProgress, selectedExercise.id)
   }, [practiceProgress, selectedExercise])
+  const activeProject = useMemo(() => projects.find((project) => project.id === activeProjectId) ?? null, [projects, activeProjectId])
+  const selectedExample = useMemo(() => getExampleProgramById(selectedExampleId), [selectedExampleId])
 
   const { inputFields, parserError, flowchartPreview, insights } = useMemo(() => {
     try {
@@ -92,6 +124,105 @@ export function PlaygroundPage() {
   const isAnalysisPending = source !== deferredSource
 
   const parserHint = useMemo(() => (parserError ? getPseintErrorHint(parserError) : null), [parserError])
+  const parserErrorLine = useMemo(() => extractParserErrorLine(parserError), [parserError])
+
+  const buildProjectsWithCurrentDraft = (baseProjects: PlaygroundProject[]) =>
+    baseProjects.map((project) =>
+      project.id === activeProjectId
+        ? {
+            ...project,
+            source,
+            inputs: { ...inputs },
+            updatedAt: new Date().toISOString(),
+          }
+        : project,
+    )
+
+  const switchProject = (nextProjectId: string) => {
+    if (nextProjectId === activeProjectId) {
+      return
+    }
+
+    const hydratedProjects = buildProjectsWithCurrentDraft(projects)
+    const targetProject = hydratedProjects.find((project) => project.id === nextProjectId)
+    if (!targetProject) {
+      return
+    }
+
+    setProjects(hydratedProjects)
+    setActiveProjectId(nextProjectId)
+    setSource(targetProject.source)
+    syncInputsWithSource(targetProject.source, targetProject.inputs)
+    reset()
+    savePlaygroundWorkspace({ projects: hydratedProjects, activeProjectId: nextProjectId })
+  }
+
+  const createProject = () => {
+    const hydratedProjects = buildProjectsWithCurrentDraft(projects)
+    const projectName = createNextProjectName(hydratedProjects)
+    const newProject = createPlaygroundProject({
+      name: projectName,
+      source: defaultProgram,
+      inputs: defaultInputs,
+    })
+    const nextProjects = [...hydratedProjects, newProject]
+
+    setProjects(nextProjects)
+    setActiveProjectId(newProject.id)
+    setSource(newProject.source)
+    syncInputsWithSource(newProject.source, newProject.inputs)
+    reset()
+    savePlaygroundWorkspace({ projects: nextProjects, activeProjectId: newProject.id })
+  }
+
+  const renameProject = () => {
+    if (!activeProject) {
+      return
+    }
+
+    const proposedName = window.prompt('Nombre del proyecto', activeProject.name)
+    if (!proposedName) {
+      return
+    }
+
+    const trimmedName = proposedName.trim()
+    if (!trimmedName.length) {
+      return
+    }
+
+    const hydratedProjects = buildProjectsWithCurrentDraft(projects)
+    const nextProjects = hydratedProjects.map((project) =>
+      project.id === activeProjectId
+        ? {
+            ...project,
+            name: trimmedName,
+          }
+        : project,
+    )
+
+    setProjects(nextProjects)
+    savePlaygroundWorkspace({ projects: nextProjects, activeProjectId })
+  }
+
+  const deleteProject = () => {
+    if (projects.length <= 1) {
+      return
+    }
+
+    const hydratedProjects = buildProjectsWithCurrentDraft(projects)
+    const nextProjects = hydratedProjects.filter((project) => project.id !== activeProjectId)
+    const fallbackProject = nextProjects[0]
+    if (!fallbackProject) {
+      return
+    }
+
+    setProjects(nextProjects)
+    setActiveProjectId(fallbackProject.id)
+    setSource(fallbackProject.source)
+    syncInputsWithSource(fallbackProject.source, fallbackProject.inputs)
+    reset()
+    savePlaygroundWorkspace({ projects: nextProjects, activeProjectId: fallbackProject.id })
+  }
 
   const syncInputsWithSource = (nextSource: string, fallbackInputs: Record<string, string>) => {
     try {
@@ -107,6 +238,25 @@ export function PlaygroundPage() {
     setSource(nextSource)
     syncInputsWithSource(nextSource, nextInputs)
     reset()
+  }
+
+  const loadSelectedExample = () => {
+    if (!selectedExample) {
+      return
+    }
+
+    applyProgramTemplate(selectedExample.source, selectedExample.inputs)
+    setMobilePanel('inputs')
+  }
+
+  const formatCurrentSource = () => {
+    const formatted = formatPseintSource(source)
+    handleSourceChange(formatted)
+  }
+
+  const appendSnippetAtEnd = (snippet: string) => {
+    const nextSource = `${source.trimEnd()}\n\n${snippet}`
+    handleSourceChange(nextSource)
   }
 
   const handleSourceChange = (nextSource: string) => {
@@ -267,6 +417,40 @@ export function PlaygroundPage() {
     return () => observer.disconnect()
   }, [shouldHydrateDiagram])
 
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      const persistedProjects = projects.map((project) =>
+        project.id === activeProjectId
+          ? {
+              ...project,
+              source,
+              inputs: { ...inputs },
+              updatedAt: new Date().toISOString(),
+            }
+          : project,
+      )
+      savePlaygroundWorkspace({
+        projects: persistedProjects,
+        activeProjectId,
+      })
+    }, AUTOSAVE_DELAY_MS)
+
+    return () => clearTimeout(timeoutId)
+  }, [projects, source, inputs, activeProjectId])
+
+  useEffect(() => {
+    if (!isDiagramExpanded || typeof document === 'undefined') {
+      return
+    }
+
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+
+    return () => {
+      document.body.style.overflow = previousOverflow
+    }
+  }, [isDiagramExpanded])
+
   return (
     <div className="space-y-5 pb-[calc(env(safe-area-inset-bottom)+7rem)] md:pb-0">
       <div className="grid items-start gap-5 xl:grid-cols-[1.2fr_0.8fr]">
@@ -289,7 +473,82 @@ export function PlaygroundPage() {
           </CardHeader>
 
           <CardContent className="space-y-4">
-            <PseudocodeEditor value={source} onChange={handleSourceChange} onRunShortcut={() => void runProgram()} />
+            <div className="grid gap-3 lg:grid-cols-2">
+              <div className="space-y-2">
+                <label className="block space-y-1.5">
+                  <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Proyecto activo</span>
+                  <select
+                    className="h-11 w-full rounded-lg border border-border bg-card px-3 text-base text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring md:text-sm"
+                    value={activeProjectId}
+                    onChange={(event) => switchProject(event.target.value)}
+                  >
+                    {projects.map((project) => (
+                      <option key={project.id} value={project.id}>
+                        {project.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  <Button type="button" variant="outline" onClick={createProject}>
+                    Nuevo
+                  </Button>
+                  <Button type="button" variant="outline" onClick={renameProject}>
+                    Renombrar
+                  </Button>
+                  <Button type="button" variant="outline" onClick={deleteProject} disabled={projects.length <= 1}>
+                    Eliminar
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">Guardado automatico activo (localStorage).</p>
+              </div>
+
+              <div className="space-y-2">
+                <label className="block space-y-1.5">
+                  <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Cargar ejemplo</span>
+                  <select
+                    className="h-11 w-full rounded-lg border border-border bg-card px-3 text-base text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring md:text-sm"
+                    value={selectedExampleId}
+                    onChange={(event) => setSelectedExampleId(event.target.value)}
+                  >
+                    {examplePrograms.map((example) => (
+                      <option key={example.id} value={example.id}>
+                        [{example.level}] {example.title}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  <Button type="button" variant="secondary" onClick={loadSelectedExample}>
+                    Cargar ejemplo
+                  </Button>
+                  <Button type="button" variant="outline" onClick={formatCurrentSource}>
+                    Formatear codigo
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            <PseudocodeEditor
+              value={source}
+              onChange={handleSourceChange}
+              onRunShortcut={() => void runProgram()}
+              parserErrorLine={parserErrorLine}
+              parserErrorMessage={parserError}
+            />
+
+            <div className="space-y-1.5">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Snippets rapidos</p>
+              <div className="-mx-1 overflow-x-auto px-1">
+                <div className="flex min-w-max items-center gap-2">
+                  {quickSnippets.map((snippet) => (
+                    <Button key={snippet.id} type="button" variant="outline" size="sm" onClick={() => appendSnippetAtEnd(snippet.content)}>
+                      {snippet.label}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            </div>
 
             <div className="hidden flex-wrap items-center gap-3 md:flex">
               <Button type="button" onClick={() => void runProgram()} disabled={isRunDisabled}>
@@ -458,9 +717,25 @@ export function PlaygroundPage() {
 
       <div ref={diagramSectionRef}>
         <Card id={getMobilePanelSectionId('diagram')} className={`min-w-0 ${panelClass('diagram')}`}>
-          <CardHeader>
-            <CardTitle>Diagrama de flujo</CardTitle>
-            <CardDescription>Se actualiza automaticamente al cambiar el codigo.</CardDescription>
+          <CardHeader className="space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <CardTitle>Diagrama de flujo</CardTitle>
+                <CardDescription>Se actualiza automaticamente al cambiar el codigo.</CardDescription>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full sm:w-auto"
+                onClick={() => {
+                  setShouldHydrateDiagram(true)
+                  setIsDiagramExpanded(true)
+                }}
+                disabled={!flowchartPreview}
+              >
+                Expandir diagrama
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
             {flowchartPreview && shouldRenderDiagram && shouldHydrateDiagram ? (
@@ -484,6 +759,28 @@ export function PlaygroundPage() {
           </CardContent>
         </Card>
       </div>
+
+      {isDiagramExpanded && flowchartPreview ? (
+        <div className="fixed inset-0 z-50 bg-background/96 p-3 backdrop-blur-sm md:p-5">
+          <div className="mx-auto flex h-full w-full max-w-5xl flex-col rounded-2xl border border-border bg-card">
+            <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
+              <div className="space-y-0.5">
+                <p className="text-sm font-semibold text-foreground">Diagrama en vista ampliada</p>
+                <p className="text-xs text-muted-foreground">En mobile puedes desplazar horizontalmente para leer nodos grandes.</p>
+              </div>
+              <Button type="button" variant="outline" onClick={() => setIsDiagramExpanded(false)}>
+                Cerrar
+              </Button>
+            </div>
+
+            <div className="min-h-0 flex-1 overflow-auto p-3 md:p-5">
+              <Suspense fallback={<p className="text-sm text-muted-foreground">Cargando renderer de diagramas...</p>}>
+                <MermaidChart chart={flowchartPreview} />
+              </Suspense>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       <MobileRunDock
         onRun={runProgram}
@@ -623,6 +920,20 @@ function keepOnlyExpectedInputs(
 ): Record<string, string> {
   const nextEntries = fields.map((field) => [field.name, currentInputs[field.name] ?? defaultInputs[field.name] ?? ''] as const)
   return Object.fromEntries(nextEntries)
+}
+
+function extractParserErrorLine(parserError: string | null): number | null {
+  if (!parserError) {
+    return null
+  }
+
+  const match = parserError.match(/linea\s+(\d+)/i)
+  if (!match) {
+    return null
+  }
+
+  const line = Number.parseInt(match[1] ?? '', 10)
+  return Number.isFinite(line) ? line : null
 }
 
 function isExpectedOutputMatch(runtimeOutput: string[], expectedOutput: string[]): boolean {
