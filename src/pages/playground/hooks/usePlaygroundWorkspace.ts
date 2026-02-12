@@ -1,14 +1,13 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { defaultInputs, defaultProgram } from '@/features/runtime/model/defaultProgram'
 import { examplePrograms, getExampleProgramById } from '@/features/runtime/model/examplePrograms'
 import {
-  createNextProjectName,
-  createPlaygroundProject,
   loadPlaygroundWorkspace,
   savePlaygroundWorkspace,
   type PlaygroundProject,
 } from '@/features/runtime/model/projects'
 import { AUTOSAVE_DELAY_MS } from '@/pages/playground/model/playgroundUiConfig'
+import { useWorkspaceProjectActions } from '@/pages/playground/hooks/workspace/useWorkspaceProjectActions'
 import { keepOnlyExpectedInputs } from '@/pages/playground/lib/playgroundRuntimeUtils'
 import { extractInputFields } from '@/shared/lib/pseint/analyzer'
 import { formatPseintSource } from '@/shared/lib/pseint/formatter'
@@ -33,32 +32,31 @@ export function usePlaygroundWorkspace({ onRuntimeReset }: UsePlaygroundWorkspac
   const [inputs, setInputs] = useState<Record<string, string>>(initialActiveProject.inputs)
   const [selectedExampleId, setSelectedExampleId] = useState(initialExampleId)
 
-  const activeProject = useMemo(() => projects.find((project) => project.id === activeProjectId) ?? null, [projects, activeProjectId])
-  const selectedExample = useMemo(() => getExampleProgramById(selectedExampleId), [selectedExampleId])
-
-  const buildProjectsWithCurrentDraft = useCallback(
-    (baseProjects: PlaygroundProject[]) =>
-      baseProjects.map((project) =>
-        project.id === activeProjectId
-          ? {
-              ...project,
-              source,
-              inputs: { ...inputs },
-              updatedAt: new Date().toISOString(),
-            }
-          : project,
-      ),
-    [activeProjectId, source, inputs],
-  )
-
   const syncInputsWithSource = useCallback((nextSource: string, fallbackInputs: Record<string, string>) => {
-    try {
-      const ast = parseProgram(nextSource)
-      const fields = extractInputFields(ast)
-      setInputs(keepOnlyExpectedInputs(fallbackInputs, fields, defaultInputs))
-    } catch {
-      setInputs(fallbackInputs)
-    }
+    setInputs(computeSyncedInputs(nextSource, fallbackInputs))
+  }, [])
+
+  const [
+    switchProject,
+    createProject,
+    renameProject,
+    deleteProject,
+    hydrateCurrentDraft,
+  ] = useWorkspaceProjectActions({
+    projects,
+    activeProjectId,
+    source,
+    inputs,
+    setProjects,
+    setActiveProjectId,
+    setSource,
+    syncInputsWithSource,
+    onRuntimeReset,
+  })
+
+  const handleSourceChange = useCallback((nextSource: string) => {
+    setSource(nextSource)
+    setInputs((currentInputs) => computeSyncedInputs(nextSource, currentInputs))
   }, [])
 
   const applyProgramTemplate = useCallback(
@@ -70,113 +68,14 @@ export function usePlaygroundWorkspace({ onRuntimeReset }: UsePlaygroundWorkspac
     [onRuntimeReset, syncInputsWithSource],
   )
 
-  const switchProject = useCallback(
-    (nextProjectId: string) => {
-      if (nextProjectId === activeProjectId) {
-        return
-      }
-
-      const hydratedProjects = buildProjectsWithCurrentDraft(projects)
-      const targetProject = hydratedProjects.find((project) => project.id === nextProjectId)
-      if (!targetProject) {
-        return
-      }
-
-      setProjects(hydratedProjects)
-      setActiveProjectId(nextProjectId)
-      setSource(targetProject.source)
-      syncInputsWithSource(targetProject.source, targetProject.inputs)
-      onRuntimeReset()
-      savePlaygroundWorkspace({ projects: hydratedProjects, activeProjectId: nextProjectId })
-    },
-    [activeProjectId, buildProjectsWithCurrentDraft, onRuntimeReset, projects, syncInputsWithSource],
-  )
-
-  const createProject = useCallback(() => {
-    const hydratedProjects = buildProjectsWithCurrentDraft(projects)
-    const projectName = createNextProjectName(hydratedProjects)
-    const newProject = createPlaygroundProject({
-      name: projectName,
-      source: defaultProgram,
-      inputs: defaultInputs,
-    })
-    const nextProjects = [...hydratedProjects, newProject]
-
-    setProjects(nextProjects)
-    setActiveProjectId(newProject.id)
-    setSource(newProject.source)
-    syncInputsWithSource(newProject.source, newProject.inputs)
-    onRuntimeReset()
-    savePlaygroundWorkspace({ projects: nextProjects, activeProjectId: newProject.id })
-  }, [buildProjectsWithCurrentDraft, onRuntimeReset, projects, syncInputsWithSource])
-
-  const renameProject = useCallback(() => {
-    if (!activeProject) {
-      return
-    }
-
-    const proposedName = window.prompt('Nombre del proyecto', activeProject.name)
-    if (!proposedName) {
-      return
-    }
-
-    const trimmedName = proposedName.trim()
-    if (!trimmedName.length) {
-      return
-    }
-
-    const hydratedProjects = buildProjectsWithCurrentDraft(projects)
-    const nextProjects = hydratedProjects.map((project) =>
-      project.id === activeProjectId
-        ? {
-            ...project,
-            name: trimmedName,
-          }
-        : project,
-    )
-
-    setProjects(nextProjects)
-    savePlaygroundWorkspace({ projects: nextProjects, activeProjectId })
-  }, [activeProject, activeProjectId, buildProjectsWithCurrentDraft, projects])
-
-  const deleteProject = useCallback(() => {
-    if (projects.length <= 1) {
-      return
-    }
-
-    const hydratedProjects = buildProjectsWithCurrentDraft(projects)
-    const nextProjects = hydratedProjects.filter((project) => project.id !== activeProjectId)
-    const fallbackProject = nextProjects[0]
-    if (!fallbackProject) {
-      return
-    }
-
-    setProjects(nextProjects)
-    setActiveProjectId(fallbackProject.id)
-    setSource(fallbackProject.source)
-    syncInputsWithSource(fallbackProject.source, fallbackProject.inputs)
-    onRuntimeReset()
-    savePlaygroundWorkspace({ projects: nextProjects, activeProjectId: fallbackProject.id })
-  }, [activeProjectId, buildProjectsWithCurrentDraft, onRuntimeReset, projects, syncInputsWithSource])
-
-  const handleSourceChange = useCallback((nextSource: string) => {
-    setSource(nextSource)
-    try {
-      const ast = parseProgram(nextSource)
-      const fields = extractInputFields(ast)
-      setInputs((currentInputs) => keepOnlyExpectedInputs(currentInputs, fields, defaultInputs))
-    } catch {
-      // keep previous inputs while user edits invalid code
-    }
-  }, [])
-
   const loadSelectedExample = useCallback(() => {
+    const selectedExample = getExampleProgramById(selectedExampleId)
     if (!selectedExample) {
       return
     }
 
     applyProgramTemplate(selectedExample.source, selectedExample.inputs)
-  }, [applyProgramTemplate, selectedExample])
+  }, [applyProgramTemplate, selectedExampleId])
 
   const formatCurrentSource = useCallback(() => {
     const formatted = formatPseintSource(source)
@@ -197,16 +96,7 @@ export function usePlaygroundWorkspace({ onRuntimeReset }: UsePlaygroundWorkspac
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-      const persistedProjects = projects.map((project) =>
-        project.id === activeProjectId
-          ? {
-              ...project,
-              source,
-              inputs: { ...inputs },
-              updatedAt: new Date().toISOString(),
-            }
-          : project,
-      )
+      const persistedProjects = hydrateCurrentDraft(projects)
       savePlaygroundWorkspace({
         projects: persistedProjects,
         activeProjectId,
@@ -214,16 +104,14 @@ export function usePlaygroundWorkspace({ onRuntimeReset }: UsePlaygroundWorkspac
     }, AUTOSAVE_DELAY_MS)
 
     return () => clearTimeout(timeoutId)
-  }, [projects, source, inputs, activeProjectId])
+  }, [projects, activeProjectId, hydrateCurrentDraft])
 
   return {
     projects,
     activeProjectId,
-    activeProject,
     source,
     inputs,
     selectedExampleId,
-    selectedExample,
     setSelectedExampleId,
     setInputs,
     switchProject,
@@ -236,5 +124,15 @@ export function usePlaygroundWorkspace({ onRuntimeReset }: UsePlaygroundWorkspac
     handleSourceChange,
     restoreDefaultProgram,
     applyProgramTemplate,
+  }
+}
+
+function computeSyncedInputs(nextSource: string, fallbackInputs: Record<string, string>): Record<string, string> {
+  try {
+    const ast = parseProgram(nextSource)
+    const fields = extractInputFields(ast)
+    return keepOnlyExpectedInputs(fallbackInputs, fields, defaultInputs)
+  } catch {
+    return fallbackInputs
   }
 }
