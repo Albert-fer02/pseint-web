@@ -1,18 +1,19 @@
 import { useMemo, useState } from 'react'
 import {
+  completeStageIfAllowed,
   computePracticeMastery,
   createDefaultPracticeProgressEntry,
   getPracticeExerciseById,
   getPracticeExercisesByUnitId,
   getPracticeProgressEntry,
   getPracticeUnitById,
+  hasValidReflection,
   loadPracticeProgress,
   practiceExercises,
   practiceUnits,
   practiceStageFlow,
   savePracticeProgress,
   type PracticeProgress,
-  type PracticeProgressEntry,
   type PracticeStageId,
   type PracticeUnitId,
 } from '@/features/runtime/model/practiceExercises'
@@ -103,13 +104,39 @@ export function usePracticeMode({ applyProgramTemplate }: UsePracticeModeOptions
   const markExerciseAttempt = (exerciseId: string) => {
     updatePracticeProgress((current) => {
       const currentEntry = getPracticeProgressEntry(current, exerciseId)
+      const now = new Date().toISOString()
+      const withPracticeStage = completeStageIfAllowed(currentEntry, 'practica', now)
+
       return {
         ...current,
         [exerciseId]: {
-          ...completeStage(currentEntry, 'practica'),
+          ...withPracticeStage,
           attempts: currentEntry.attempts + 1,
-          lastAttemptAt: new Date().toISOString(),
+          lastAttemptAt: now,
         },
+      }
+    })
+  }
+
+  const markExerciseCreationFromSource = (exerciseId: string, source: string) => {
+    const exercise = getPracticeExerciseById(exerciseId)
+    if (!exercise) {
+      return
+    }
+
+    const currentSource = normalizeSourceForProgress(source)
+    const starterSource = normalizeSourceForProgress(exercise.starterCode)
+    const solutionSource = normalizeSourceForProgress(exercise.solutionCode)
+
+    if (!currentSource || currentSource === starterSource || currentSource === solutionSource) {
+      return
+    }
+
+    updatePracticeProgress((current) => {
+      const currentEntry = getPracticeProgressEntry(current, exerciseId)
+      return {
+        ...current,
+        [exerciseId]: completeStageIfAllowed(currentEntry, 'crea'),
       }
     })
   }
@@ -117,12 +144,16 @@ export function usePracticeMode({ applyProgramTemplate }: UsePracticeModeOptions
   const markExerciseCompleted = (exerciseId: string) => {
     updatePracticeProgress((current) => {
       const currentEntry = getPracticeProgressEntry(current, exerciseId)
+      const now = new Date().toISOString()
+      const withSolvedStage = completeStageIfAllowed(currentEntry, 'resuelve', now)
+      const solved = Boolean(withSolvedStage.stageCompletedAt.resuelve)
+
       return {
         ...current,
         [exerciseId]: {
-          ...completeStage(currentEntry, 'resuelve'),
-          completed: true,
-          completedAt: currentEntry.completedAt ?? new Date().toISOString(),
+          ...withSolvedStage,
+          completed: currentEntry.completed || solved,
+          completedAt: currentEntry.completedAt ?? (solved ? now : null),
         },
       }
     })
@@ -133,20 +164,20 @@ export function usePracticeMode({ applyProgramTemplate }: UsePracticeModeOptions
       const currentEntry = getPracticeProgressEntry(current, exerciseId)
       return {
         ...current,
-        [exerciseId]: completeStage(currentEntry, stageId),
+        [exerciseId]: completeStageIfAllowed(currentEntry, stageId),
       }
     })
   }
 
   const saveExerciseReflection = (exerciseId: string, note: string) => {
     const trimmed = note.trim()
-    if (!trimmed) {
+    if (!hasValidReflection(trimmed)) {
       return
     }
 
     updatePracticeProgress((current) => {
       const currentEntry = getPracticeProgressEntry(current, exerciseId)
-      const nextEntry = completeStage(currentEntry, 'reflexiona')
+      const nextEntry = completeStageIfAllowed(currentEntry, 'reflexiona')
       return {
         ...current,
         [exerciseId]: {
@@ -163,7 +194,6 @@ export function usePracticeMode({ applyProgramTemplate }: UsePracticeModeOptions
     }
 
     applyProgramTemplate(selectedExercise.starterCode, selectedExercise.starterInputs)
-    markExerciseStageCompleted(selectedExercise.id, 'aprende')
   }
 
   const loadSelectedSolution = () => {
@@ -194,6 +224,7 @@ export function usePracticeMode({ applyProgramTemplate }: UsePracticeModeOptions
     setSelectedExerciseId: handleExerciseChange,
     handleUnitChange,
     markExerciseAttempt,
+    markExerciseCreationFromSource,
     markExerciseCompleted,
     markExerciseStageCompleted,
     saveExerciseReflection,
@@ -203,25 +234,6 @@ export function usePracticeMode({ applyProgramTemplate }: UsePracticeModeOptions
   }
 }
 
-function completeStage(
-  entry: PracticeProgressEntry,
-  stageId: PracticeStageId,
-): PracticeProgressEntry {
-  const now = new Date().toISOString()
-  const stageCompletedAt = { ...entry.stageCompletedAt }
-
-  for (const stage of practiceStageFlow) {
-    if (!stageCompletedAt[stage.id]) {
-      stageCompletedAt[stage.id] = now
-    }
-
-    if (stage.id === stageId) {
-      break
-    }
-  }
-
-  return {
-    ...entry,
-    stageCompletedAt,
-  }
+function normalizeSourceForProgress(source: string): string {
+  return source.replace(/\s+/g, ' ').trim()
 }

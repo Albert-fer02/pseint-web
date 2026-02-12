@@ -85,6 +85,7 @@ export function PlaygroundPage() {
     setSelectedExerciseId,
     handleUnitChange,
     markExerciseAttempt,
+    markExerciseCreationFromSource,
     markExerciseCompleted,
     markExerciseStageCompleted,
     saveExerciseReflection,
@@ -131,6 +132,7 @@ export function PlaygroundPage() {
 
     if (selectedExercise && selectedExerciseAccess.unlocked) {
       markExerciseAttempt(selectedExercise.id)
+      markExerciseCreationFromSource(selectedExercise.id, source)
     }
 
     try {
@@ -388,20 +390,15 @@ export function PlaygroundPage() {
               exerciseAccessById={mastery.exerciseAccessById}
               unlockedUnitIds={mastery.unlockedUnitIds}
               onUnitChange={handleUnitChange}
-              onExerciseChange={setSelectedExerciseId}
-              onLoadExercise={loadSelectedExercise}
-              onLoadSolution={loadSelectedSolution}
-              onMarkCompleted={() => {
-                if (selectedExercise) {
-                  markExerciseCompleted(selectedExercise.id)
-                }
-              }}
-              onCompleteStage={(stageId) => {
-                if (selectedExercise) {
-                  markExerciseStageCompleted(selectedExercise.id, stageId)
-                }
-              }}
-              onSaveReflection={(note) => {
+            onExerciseChange={setSelectedExerciseId}
+            onLoadExercise={loadSelectedExercise}
+            onLoadSolution={loadSelectedSolution}
+            onMarkLearned={() => {
+              if (selectedExercise) {
+                markExerciseStageCompleted(selectedExercise.id, 'aprende')
+              }
+            }}
+            onSaveReflection={(note) => {
                 if (selectedExercise) {
                   saveExerciseReflection(selectedExercise.id, note)
                 }

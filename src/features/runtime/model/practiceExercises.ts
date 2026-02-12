@@ -37,6 +37,17 @@ export {
   type PracticeUnitMastery,
 } from './practice/mastery'
 
+export {
+  completeStageIfAllowed,
+  hasValidReflection,
+  REFLECTION_MIN_LENGTH,
+} from './practice/stageProgress'
+
+export {
+  buildPracticeCheckpoint,
+  type PracticeCheckpoint,
+} from './practice/checkpoint'
+
 export function getPracticeExerciseById(id: string): PracticeExercise | null {
   const match = practiceExercises.find((exercise) => exercise.id === id)
   return match ?? null

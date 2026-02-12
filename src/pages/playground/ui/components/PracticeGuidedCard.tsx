@@ -1,13 +1,15 @@
 import { useMemo, useState } from 'react'
 import {
+  buildPracticeCheckpoint,
+  getNextPendingStageId,
   isStageCompleted,
   isStageUnlocked,
   practiceUnits,
+  REFLECTION_MIN_LENGTH,
   type PracticeExercise,
   type PracticeExerciseAccess,
   type PracticeProgressEntry,
   type PracticeStageDefinition,
-  type PracticeStageId,
   type PracticeUnitId,
 } from '@/features/runtime/model/practiceExercises'
 import { Badge } from '@/shared/ui/badge'
@@ -30,8 +32,7 @@ interface PracticeGuidedCardProps {
   onExerciseChange: (exerciseId: string) => void
   onLoadExercise: () => void
   onLoadSolution: () => void
-  onMarkCompleted: () => void
-  onCompleteStage: (stageId: PracticeStageId) => void
+  onMarkLearned: () => void
   onSaveReflection: (note: string) => void
   onResetProgress: () => void
 }
@@ -52,29 +53,38 @@ export function PracticeGuidedCard({
   onExerciseChange,
   onLoadExercise,
   onLoadSolution,
-  onMarkCompleted,
-  onCompleteStage,
+  onMarkLearned,
   onSaveReflection,
   onResetProgress,
 }: PracticeGuidedCardProps) {
   const [reflectionDraft, setReflectionDraft] = useState(() => selectedProgress.reflectionNote ?? '')
+  const [selectedOptionIndex, setSelectedOptionIndex] = useState<number | null>(null)
+  const [checkpointFeedback, setCheckpointFeedback] = useState<string | null>(null)
 
-  const canSaveReflection = reflectionDraft.trim().length > 0
-  const nextStageId = useMemo(() => {
-    for (const stage of stageFlow) {
-      if (!isStageCompleted(selectedProgress, stage.id)) {
-        return stage.id
-      }
+  const checkpoint = useMemo(() => (selectedExercise ? buildPracticeCheckpoint(selectedExercise) : null), [selectedExercise])
+  const nextStageId = useMemo(() => getNextPendingStageId(selectedProgress), [selectedProgress])
+  const canSaveReflection = reflectionDraft.trim().length >= REFLECTION_MIN_LENGTH
+
+  const validateCheckpoint = () => {
+    if (!checkpoint || selectedOptionIndex === null) {
+      setCheckpointFeedback('Selecciona una opcion para validar tu comprension.')
+      return
     }
 
-    return null
-  }, [selectedProgress, stageFlow])
+    if (selectedOptionIndex === checkpoint.correctIndex) {
+      onMarkLearned()
+      setCheckpointFeedback(checkpoint.successMessage)
+      return
+    }
+
+    setCheckpointFeedback('Respuesta incorrecta. Revisa el objetivo y vuelve a intentarlo.')
+  }
 
   return (
     <Card id={cardId} className={cardClassName}>
       <CardHeader>
         <CardTitle>Modo practica guiada</CardTitle>
-        <CardDescription>Ruta por etapas: aprende, practica, crea, ejecuta, resuelve y reflexiona.</CardDescription>
+        <CardDescription>Ruta real: aprende, practica, crea, ejecuta, resuelve y reflexiona.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <label className="block space-y-1.5">
@@ -158,9 +168,6 @@ export function PracticeGuidedCard({
               <Button type="button" variant="outline" onClick={onLoadSolution} disabled={!selectedExerciseAccess.unlocked}>
                 Ver solucion
               </Button>
-              <Button type="button" variant="outline" onClick={onMarkCompleted} disabled={!selectedExerciseAccess.unlocked}>
-                Marcar completado
-              </Button>
               <Button type="button" variant="ghost" onClick={onResetProgress}>
                 Reset progreso
               </Button>
@@ -180,25 +187,70 @@ export function PracticeGuidedCard({
                           <p className="text-sm font-medium text-foreground">{stage.title}</p>
                           <p className="text-xs text-muted-foreground">{stage.description}</p>
                         </div>
-                        <Badge variant={completed ? 'secondary' : unlocked ? 'outline' : 'outline'}>
+                        <Badge variant={completed ? 'secondary' : 'outline'}>
                           {completed ? 'Completada' : unlocked ? 'Disponible' : 'Bloqueada'}
                         </Badge>
                       </div>
 
-                      {stage.id !== 'reflexiona' ? (
-                        <div className="mt-2">
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="outline"
-                            disabled={!selectedExerciseAccess.unlocked || completed || !unlocked}
-                            onClick={() => onCompleteStage(stage.id)}
-                          >
-                            Completar etapa
-                          </Button>
-                        </div>
-                      ) : (
+                      {stage.id === 'aprende' ? (
                         <div className="mt-2 space-y-2">
+                          <p className="text-xs text-muted-foreground">Se completa respondiendo correctamente el checkpoint.</p>
+                          {checkpoint ? (
+                            <div className="space-y-2 rounded-md border border-border bg-muted/20 p-2">
+                              <p className="text-sm text-foreground">{checkpoint.question}</p>
+                              <div className="space-y-1">
+                                {checkpoint.options.map((option, index) => (
+                                  <label key={option} className="flex items-start gap-2 text-sm text-foreground">
+                                    <input
+                                      type="radio"
+                                      name={`checkpoint-${selectedExercise.id}`}
+                                      value={index}
+                                      checked={selectedOptionIndex === index}
+                                      onChange={() => setSelectedOptionIndex(index)}
+                                      disabled={completed || !unlocked || !selectedExerciseAccess.unlocked}
+                                    />
+                                    <span>{option}</span>
+                                  </label>
+                                ))}
+                              </div>
+
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                disabled={completed || !unlocked || !selectedExerciseAccess.unlocked}
+                                onClick={validateCheckpoint}
+                              >
+                                Validar comprension
+                              </Button>
+
+                              {checkpointFeedback ? <p className="text-xs text-muted-foreground">{checkpointFeedback}</p> : null}
+                            </div>
+                          ) : null}
+                        </div>
+                      ) : null}
+
+                      {stage.id === 'practica' ? (
+                        <p className="mt-2 text-xs text-muted-foreground">Se completa automaticamente cuando ejecutas un intento valido.</p>
+                      ) : null}
+
+                      {stage.id === 'crea' ? (
+                        <p className="mt-2 text-xs text-muted-foreground">Se completa cuando ejecutas una solucion editada por ti (distinta al starter).</p>
+                      ) : null}
+
+                      {stage.id === 'ejecuta' ? (
+                        <p className="mt-2 text-xs text-muted-foreground">Se completa cuando el programa corre sin error de runtime.</p>
+                      ) : null}
+
+                      {stage.id === 'resuelve' ? (
+                        <p className="mt-2 text-xs text-muted-foreground">Se completa cuando la salida coincide con el resultado esperado.</p>
+                      ) : null}
+
+                      {stage.id === 'reflexiona' ? (
+                        <div className="mt-2 space-y-2">
+                          <p className="text-xs text-muted-foreground">
+                            Minimo {REFLECTION_MIN_LENGTH} caracteres. Se desbloquea despues de resolver.
+                          </p>
                           <textarea
                             className="min-h-20 w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
                             placeholder="Escribe que aprendiste o que mejoraras en el siguiente intento..."
@@ -216,7 +268,7 @@ export function PracticeGuidedCard({
                             Guardar reflexion
                           </Button>
                         </div>
-                      )}
+                      ) : null}
                     </div>
                   )
                 })}
