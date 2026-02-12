@@ -47,7 +47,7 @@ export function PracticeActiveStageSection({
   }
 
   return (
-    <div className="rounded-xl border border-border/80 bg-card/85 p-3">
+    <div className="rounded-lg bg-card/75 p-3 ring-1 ring-border/60">
       <div className="mb-2 flex items-center justify-between gap-2">
         <div>
           <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Etapa activa</p>
@@ -62,13 +62,14 @@ export function PracticeActiveStageSection({
         <div className="space-y-2">
           <p className="text-xs text-muted-foreground">Checkpoint: valida que comprendiste el objetivo antes de codificar.</p>
           {checkpoint ? (
-            <fieldset className="space-y-2 rounded-lg border border-border/70 bg-muted/15 p-3">
+            <fieldset className="space-y-2 rounded-md bg-background/65 p-3 ring-1 ring-border/60">
               <legend className="text-sm text-foreground">{checkpoint.question}</legend>
-              <div className="space-y-1">
+              <div className="space-y-1.5">
                 {checkpoint.options.map((option, index) => (
-                  <label key={option} className="flex items-start gap-2 text-sm text-foreground">
+                  <label key={option} className="flex items-start gap-3 text-sm text-foreground">
                     <input
                       type="radio"
+                      className="mt-0.5 h-4 w-4 shrink-0 accent-[var(--primary)]"
                       name={`checkpoint-${selectedExercise.id}`}
                       value={index}
                       checked={selectedOptionIndex === index}

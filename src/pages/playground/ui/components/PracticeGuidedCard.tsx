@@ -101,7 +101,7 @@ export function PracticeGuidedCard({
         />
 
         {selectedExercise ? (
-          <div className="space-y-4 rounded-xl border border-border bg-muted/20 p-4">
+          <div className="space-y-3 rounded-xl bg-muted/15 p-3 ring-1 ring-border/60">
             <PracticeMissionSummary
               selectedExercise={selectedExercise}
               selectedUnitTitle={selectedUnitTitle}
