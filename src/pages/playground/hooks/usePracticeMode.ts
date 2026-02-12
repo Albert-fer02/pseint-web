@@ -7,22 +7,14 @@ import {
   getPracticeProgressEntry,
   getPracticeUnitById,
   loadPracticeProgress,
-  normalizeSourceForProgress,
   practiceExercises,
-  practiceUnits,
-  recordPracticeAttempt,
-  recordPracticeCreation,
-  recordPracticeExecution,
-  recordPracticeLearned,
-  recordPracticeReflection,
-  recordPracticeSolved,
   practiceStageFlow,
+  practiceUnits,
   savePracticeProgress,
   type PracticeProgress,
-  type PracticeProgressEntry,
-  type PracticeStageId,
   type PracticeUnitId,
 } from '@/features/runtime/model/practiceExercises'
+import { createPracticeModeActions } from '@/pages/playground/hooks/practice-mode/actions'
 
 const initialExerciseId = practiceExercises[0]?.id ?? ''
 const initialUnitId = practiceExercises[0]?.unitId ?? 'u1-fundamentos'
@@ -45,7 +37,7 @@ export function usePracticeMode({ applyProgramTemplate }: UsePracticeModeOptions
 
     return mastery.unlockedUnitIds[0] ?? selectedUnitId
   }, [selectedUnitId, mastery.unitMasteryById, mastery.unlockedUnitIds])
-  const selectedUnitUnlocked = mastery.unitMasteryById[activeUnitId]?.unlocked ?? false
+
   const exercisesByUnit = useMemo(() => getPracticeExercisesByUnitId(activeUnitId), [activeUnitId])
   const unlockedExercisesByUnit = useMemo(
     () => exercisesByUnit.filter((exercise) => mastery.exerciseAccessById[exercise.id]?.unlocked),
@@ -72,10 +64,10 @@ export function usePracticeMode({ applyProgramTemplate }: UsePracticeModeOptions
 
   const selectedExerciseAccess = useMemo(() => {
     if (!selectedExercise) {
-      return { unlocked: false, reason: 'No hay ejercicio disponible.' }
+      return { unlocked: false, reason: 'Sin ejercicio.' }
     }
 
-    return mastery.exerciseAccessById[selectedExercise.id] ?? { unlocked: false, reason: 'Ejercicio bloqueado.' }
+    return mastery.exerciseAccessById[selectedExercise.id] ?? { unlocked: false, reason: 'Bloqueado.' }
   }, [mastery.exerciseAccessById, selectedExercise])
 
   const updatePracticeProgress = (updater: (current: PracticeProgress) => PracticeProgress) => {
@@ -86,141 +78,35 @@ export function usePracticeMode({ applyProgramTemplate }: UsePracticeModeOptions
     })
   }
 
-  const handleUnitChange = (nextUnitId: PracticeUnitId) => {
-    const unitMastery = mastery.unitMasteryById[nextUnitId]
-    if (!unitMastery?.unlocked) {
-      return
-    }
-
-    setSelectedUnitId(nextUnitId)
-    const fallbackExercise = getPracticeExercisesByUnitId(nextUnitId).find((exercise) => mastery.exerciseAccessById[exercise.id]?.unlocked)
-    if (fallbackExercise) {
-      setSelectedExerciseId(fallbackExercise.id)
-    }
-  }
-
-  const handleExerciseChange = (exerciseId: string) => {
-    if (!mastery.exerciseAccessById[exerciseId]?.unlocked) {
-      return
-    }
-
-    setSelectedExerciseId(exerciseId)
-  }
-
-  const markExerciseAttempt = (exerciseId: string) => {
-    updatePracticeProgress((current) => {
-      const currentEntry = getPracticeProgressEntry(current, exerciseId)
-      const now = new Date().toISOString()
-      const nextEntry = recordPracticeAttempt(currentEntry, now)
-
-      return {
-        ...current,
-        [exerciseId]: nextEntry,
-      }
-    })
-  }
-
-  const markExerciseCreationFromSource = (exerciseId: string, source: string) => {
-    const exercise = getPracticeExerciseById(exerciseId)
-    if (!exercise) {
-      return
-    }
-
-    const currentSource = normalizeSourceForProgress(source)
-    const starterSource = normalizeSourceForProgress(exercise.starterCode)
-    const solutionSource = normalizeSourceForProgress(exercise.solutionCode)
-
-    if (!currentSource || currentSource === starterSource || currentSource === solutionSource) {
-      return
-    }
-
-    updatePracticeProgress((current) => {
-      const currentEntry = getPracticeProgressEntry(current, exerciseId)
-      const now = new Date().toISOString()
-      const nextEntry = recordPracticeCreation(
-        currentEntry,
-        {
-          currentSource,
-          starterSource,
-          solutionSource,
-        },
-        now,
-      )
-      return {
-        ...current,
-        [exerciseId]: nextEntry,
-      }
-    })
-  }
-
-  const markExerciseCompleted = (exerciseId: string) => {
-    updatePracticeProgress((current) => {
-      const currentEntry = getPracticeProgressEntry(current, exerciseId)
-      const now = new Date().toISOString()
-      const nextEntry = recordPracticeSolved(currentEntry, now)
-
-      return {
-        ...current,
-        [exerciseId]: nextEntry,
-      }
-    })
-  }
-
-  const markExerciseStageCompleted = (exerciseId: string, stageId: PracticeStageId) => {
-    updatePracticeProgress((current) => {
-      const currentEntry = getPracticeProgressEntry(current, exerciseId)
-      const now = new Date().toISOString()
-      const nextEntry = getNextEntryByStage(stageId, currentEntry, now)
-      return {
-        ...current,
-        [exerciseId]: nextEntry,
-      }
-    })
-  }
-
-  const saveExerciseReflection = (exerciseId: string, note: string) => {
-    updatePracticeProgress((current) => {
-      const currentEntry = getPracticeProgressEntry(current, exerciseId)
-      const now = new Date().toISOString()
-      const nextEntry = recordPracticeReflection(currentEntry, note, now)
-      return {
-        ...current,
-        [exerciseId]: nextEntry,
-      }
-    })
-  }
-
-  const loadSelectedExercise = () => {
-    if (!selectedExercise || !selectedExerciseAccess.unlocked) {
-      return
-    }
-
-    applyProgramTemplate(selectedExercise.starterCode, selectedExercise.starterInputs)
-  }
-
-  const loadSelectedSolution = () => {
-    if (!selectedExercise || !selectedExerciseAccess.unlocked) {
-      return
-    }
-
-    applyProgramTemplate(selectedExercise.solutionCode, selectedExercise.starterInputs)
-  }
-
-  const resetPractice = () => {
-    savePracticeProgress({})
-    setPracticeProgress({})
-  }
+  const [
+    handleUnitChange,
+    handleExerciseChange,
+    markExerciseAttempt,
+    markExerciseCreationFromSource,
+    markExerciseCompleted,
+    markExerciseStageCompleted,
+    saveExerciseReflection,
+    loadSelectedExercise,
+    loadSelectedSolution,
+    resetPractice,
+  ] = createPracticeModeActions({
+    mastery,
+    selectedExercise,
+    selectedExerciseAccess,
+    applyProgramTemplate,
+    setSelectedUnitId,
+    setSelectedExerciseId,
+    updatePracticeProgress,
+  })
 
   return {
     selectedUnitId: activeUnitId,
     selectedExerciseId,
-    practiceProgress,
     exercisesByUnit,
     selectedUnit,
     selectedExercise,
     selectedProgress,
     selectedExerciseAccess,
-    selectedUnitUnlocked,
     mastery,
     stageFlow: practiceStageFlow,
     setSelectedExerciseId: handleExerciseChange,
@@ -234,20 +120,4 @@ export function usePracticeMode({ applyProgramTemplate }: UsePracticeModeOptions
     loadSelectedSolution,
     resetPractice,
   }
-}
-
-function getNextEntryByStage(
-  stageId: PracticeStageId,
-  currentEntry: PracticeProgressEntry,
-  now: string,
-) {
-  if (stageId === 'aprende') {
-    return recordPracticeLearned(currentEntry, now)
-  }
-
-  if (stageId === 'ejecuta') {
-    return recordPracticeExecution(currentEntry, now)
-  }
-
-  return currentEntry
 }
