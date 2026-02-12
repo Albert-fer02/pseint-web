@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import { parseProgram } from '@/shared/lib/pseint/parser'
-import { practiceExercises, practiceUnits } from '@/features/runtime/model/practiceExercises'
+import {
+  getPracticeExerciseById,
+  getPracticeExercisesByUnitId,
+  getPracticeUnitById,
+  practiceExercises,
+  practiceUnits,
+} from '@/features/runtime/model/practiceExercises'
 
 describe('practiceExercises integrity', () => {
   it('has unique ids', () => {
@@ -20,5 +26,24 @@ describe('practiceExercises integrity', () => {
     for (const exercise of practiceExercises) {
       expect(() => parseProgram(exercise.solutionCode)).not.toThrow()
     }
+  })
+
+  it('resolves exercise and unit selectors', () => {
+    const firstExercise = practiceExercises[0]
+    const firstUnit = practiceUnits[0]
+
+    expect(getPracticeExerciseById(firstExercise.id)).toEqual(firstExercise)
+    expect(getPracticeExerciseById('exercise-missing')).toBeNull()
+
+    expect(getPracticeUnitById(firstUnit.id)).toEqual(firstUnit)
+    expect(getPracticeUnitById('u1-fundamentos')).not.toBeNull()
+  })
+
+  it('returns only exercises that belong to the selected unit', () => {
+    const firstUnit = practiceUnits[0]
+    const unitExercises = getPracticeExercisesByUnitId(firstUnit.id)
+
+    expect(unitExercises.length).toBeGreaterThan(0)
+    expect(unitExercises.every((exercise) => exercise.unitId === firstUnit.id)).toBe(true)
   })
 })

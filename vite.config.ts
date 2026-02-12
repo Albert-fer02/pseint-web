@@ -51,9 +51,28 @@ export default defineConfig({
     globals: true,
     exclude: ['tests/e2e/**', 'node_modules/**', 'dist/**'],
     coverage: {
-      reporter: ['text', 'html'],
-      include: ['src/**/*.{ts,tsx}'],
-      exclude: ['src/test/**'],
+      provider: 'v8',
+      reporter: ['text', 'html', 'json-summary'],
+      reportsDirectory: './coverage/unit',
+      include: [
+        'src/shared/lib/pseint/**/*.ts',
+        'src/features/runtime/model/**/*.ts',
+        'src/features/ai/lib/json.ts',
+      ],
+      exclude: [
+        'src/test/**',
+        '**/*.spec.ts',
+        '**/types.ts',
+        'src/features/runtime/model/defaultProgram.ts',
+        'src/features/runtime/model/examplePrograms.ts',
+        'src/features/runtime/model/practice/exercises/**',
+      ],
+      thresholds: {
+        lines: 60,
+        statements: 60,
+        functions: 65,
+        branches: 50,
+      },
     },
   },
 })

@@ -35,6 +35,7 @@ Validacion de calidad:
 bun run lint
 bun run typecheck
 bun run test
+bun run test:coverage
 bun run test:e2e
 bun run build
 bun run check:bundle
@@ -51,7 +52,7 @@ bun run ci
 - El workflow esta en `.github/workflows/deploy-pages.yml`.
 - Hace deploy automatico al hacer `push` a `main`.
 - El `base` se calcula automaticamente en CI con el nombre del repo.
-- Antes de publicar, ejecuta quality gates (`typecheck`, `lint`, `test`, `build`, `check:bundle`).
+- Antes de publicar, ejecuta quality gates (`typecheck`, `lint`, `test:coverage`, `build`, `check:bundle`).
 
 CI general:
 
@@ -108,6 +109,7 @@ src/
 - `docs/DESIGN_SPEC_V1.md`
 - `docs/CURRICULUM_ARCHITECTURE.md`
 - `docs/UX_LEARNING_REDESIGN.md`
+- `docs/STACK_DECISION_2026Q1.md`
 
 Incluye tokens, motion, ergonomia movil, checklist de accesibilidad y reglas de coherencia visual.
 
@@ -120,5 +122,5 @@ Incluye tokens, motion, ergonomia movil, checklist de accesibilidad y reglas de 
 - Budgets de bundle automatizados para evitar regresiones de performance.
 - Seguridad: la integracion actual es client-side para prototipo; en produccion usar backend para proteger llaves.
 - Proximo paso recomendado:
-  - lazy load del editor para bajar TTI inicial
   - separar panel de diagrama en ruta/modal on-demand
+  - ampliar cobertura de UI en componentes criticos
