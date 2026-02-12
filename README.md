@@ -74,6 +74,7 @@ Importante:
 - Autosave por proyecto en localStorage (crear, renombrar, eliminar y cambiar de proyecto).
 - Carga de ejemplos rapidos desde selector.
 - Ruta integral por unidades (fundamentos, control, estructuras, modularidad y algoritmos) con progreso.
+- Progresion pedagogica interactiva por etapas (aprende -> practica -> crea -> ejecuta -> resuelve -> reflexiona) con validacion por evidencia.
 - Contenido de practica modularizado por unidad (`src/features/runtime/model/practice/exercises/*`).
 - Resaltado de sintaxis PSeInt (keywords, tipos, funciones, operadores, comentarios, strings).
 - Autocompletado PSeInt con snippets rapidos.
@@ -106,6 +107,7 @@ src/
 
 - `docs/DESIGN_SPEC_V1.md`
 - `docs/CURRICULUM_ARCHITECTURE.md`
+- `docs/UX_LEARNING_REDESIGN.md`
 
 Incluye tokens, motion, ergonomia movil, checklist de accesibilidad y reglas de coherencia visual.
 

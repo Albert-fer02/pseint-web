@@ -186,6 +186,34 @@ iframe {
   transition-timing-function: var(--motion-ease-spring);
 }
 
+.learning-focus-sheen {
+  position: relative;
+  isolation: isolate;
+}
+
+.learning-focus-sheen::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(120deg, transparent 20%, color-mix(in srgb, var(--primary) 18%, transparent) 48%, transparent 78%);
+  opacity: 0.45;
+  transform: translateX(-12%);
+  animation: sheen-slide 5.2s var(--motion-ease-standard) infinite;
+}
+
+@keyframes sheen-slide {
+  0% {
+    transform: translateX(-14%);
+  }
+  55% {
+    transform: translateX(8%);
+  }
+  100% {
+    transform: translateX(-14%);
+  }
+}
+
 .mermaid-chart {
   overflow: auto;
   overscroll-behavior: contain;
@@ -256,5 +284,9 @@ iframe {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+
+  .learning-focus-sheen::after {
+    animation: none;
   }
 }

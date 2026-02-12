@@ -10,15 +10,14 @@ import {
   quickSnippets,
   type MobilePanelKey,
 } from '@/pages/playground/model/playgroundUiConfig'
-import {
-  practiceUnits,
-} from '@/features/runtime/model/practiceExercises'
+import { practiceUnits } from '@/features/runtime/model/practiceExercises'
 import {
   extractParserErrorLine,
   isExpectedOutputMatch,
 } from '@/pages/playground/lib/playgroundRuntimeUtils'
 import { FlowchartCard } from '@/pages/playground/ui/components/FlowchartCard'
 import { FlowchartExpandedModal } from '@/pages/playground/ui/components/FlowchartExpandedModal'
+import { LearningFocusBanner } from '@/pages/playground/ui/components/LearningFocusBanner'
 import { MobilePanelSelector } from '@/pages/playground/ui/components/MobilePanelSelector'
 import { MobileRunDock } from '@/pages/playground/ui/components/MobileRunDock'
 import { extractInputFields } from '@/shared/lib/pseint/analyzer'
@@ -99,6 +98,20 @@ export function PlaygroundPage() {
   const loadSelectedExampleAndShowInputs = () => {
     loadSelectedExample()
     setMobilePanel('inputs')
+  }
+
+  const goToPractice = () => {
+    setMobilePanel('practice')
+    if (typeof document === 'undefined') {
+      return
+    }
+
+    const target = document.getElementById(getMobilePanelSectionId('practice'))
+    if (!target) {
+      return
+    }
+
+    target.scrollIntoView({ block: 'start', behavior: 'smooth' })
   }
 
   const { inputFields, parserError, flowchartPreview, insights } = useMemo(() => {
@@ -235,6 +248,13 @@ export function PlaygroundPage() {
 
   return (
     <div className="space-y-5 pb-[calc(env(safe-area-inset-bottom)+7rem)] md:pb-0">
+      <LearningFocusBanner
+        selectedExercise={selectedExercise}
+        selectedProgress={selectedProgress}
+        parserError={parserError}
+        onGoToPractice={goToPractice}
+      />
+
       <div className="grid items-start gap-5 xl:grid-cols-[1.2fr_0.8fr]">
         <Card className="min-w-0">
           <CardHeader className="space-y-3">
@@ -365,7 +385,7 @@ export function PlaygroundPage() {
         <div className="min-w-0 space-y-5">
           <Card className="min-w-0">
             <CardHeader>
-            <CardTitle>Ruta integral de aprendizaje</CardTitle>
+              <CardTitle>Ruta integral de aprendizaje</CardTitle>
               <CardDescription>Progreso por unidad y cobertura de temas del curso.</CardDescription>
             </CardHeader>
             <CardContent>
@@ -375,7 +395,13 @@ export function PlaygroundPage() {
             </CardContent>
           </Card>
 
-          <Suspense fallback={<Card className={`min-w-0 ${panelClass('practice')}`}><CardContent className="py-6 text-sm text-muted-foreground">Cargando practica guiada...</CardContent></Card>}>
+          <Suspense
+            fallback={(
+              <Card className={`min-w-0 ${panelClass('practice')}`}>
+                <CardContent className="py-6 text-sm text-muted-foreground">Cargando practica guiada...</CardContent>
+              </Card>
+            )}
+          >
             <PracticeGuidedCard
               key={selectedExercise?.id ?? selectedUnitId}
               cardId={getMobilePanelSectionId('practice')}
@@ -390,15 +416,15 @@ export function PlaygroundPage() {
               exerciseAccessById={mastery.exerciseAccessById}
               unlockedUnitIds={mastery.unlockedUnitIds}
               onUnitChange={handleUnitChange}
-            onExerciseChange={setSelectedExerciseId}
-            onLoadExercise={loadSelectedExercise}
-            onLoadSolution={loadSelectedSolution}
-            onMarkLearned={() => {
-              if (selectedExercise) {
-                markExerciseStageCompleted(selectedExercise.id, 'aprende')
-              }
-            }}
-            onSaveReflection={(note) => {
+              onExerciseChange={setSelectedExerciseId}
+              onLoadExercise={loadSelectedExercise}
+              onLoadSolution={loadSelectedSolution}
+              onMarkLearned={() => {
+                if (selectedExercise) {
+                  markExerciseStageCompleted(selectedExercise.id, 'aprende')
+                }
+              }}
+              onSaveReflection={(note) => {
                 if (selectedExercise) {
                   saveExerciseReflection(selectedExercise.id, note)
                 }
