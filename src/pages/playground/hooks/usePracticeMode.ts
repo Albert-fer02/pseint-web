@@ -1,14 +1,19 @@
 import { useMemo, useState } from 'react'
 import {
+  computePracticeMastery,
   createDefaultPracticeProgressEntry,
   getPracticeExerciseById,
   getPracticeExercisesByUnitId,
   getPracticeProgressEntry,
   getPracticeUnitById,
   loadPracticeProgress,
-  savePracticeProgress,
   practiceExercises,
+  practiceUnits,
+  practiceStageFlow,
+  savePracticeProgress,
   type PracticeProgress,
+  type PracticeProgressEntry,
+  type PracticeStageId,
   type PracticeUnitId,
 } from '@/features/runtime/model/practiceExercises'
 
@@ -24,16 +29,31 @@ export function usePracticeMode({ applyProgramTemplate }: UsePracticeModeOptions
   const [selectedExerciseId, setSelectedExerciseId] = useState(initialExerciseId)
   const [practiceProgress, setPracticeProgress] = useState<PracticeProgress>(() => loadPracticeProgress())
 
-  const exercisesByUnit = useMemo(() => getPracticeExercisesByUnitId(selectedUnitId), [selectedUnitId])
-  const selectedUnit = useMemo(() => getPracticeUnitById(selectedUnitId), [selectedUnitId])
+  const mastery = useMemo(() => computePracticeMastery(practiceUnits, practiceExercises, practiceProgress), [practiceProgress])
+
+  const activeUnitId = useMemo(() => {
+    if (mastery.unitMasteryById[selectedUnitId]?.unlocked) {
+      return selectedUnitId
+    }
+
+    return mastery.unlockedUnitIds[0] ?? selectedUnitId
+  }, [selectedUnitId, mastery.unitMasteryById, mastery.unlockedUnitIds])
+  const selectedUnitUnlocked = mastery.unitMasteryById[activeUnitId]?.unlocked ?? false
+  const exercisesByUnit = useMemo(() => getPracticeExercisesByUnitId(activeUnitId), [activeUnitId])
+  const unlockedExercisesByUnit = useMemo(
+    () => exercisesByUnit.filter((exercise) => mastery.exerciseAccessById[exercise.id]?.unlocked),
+    [exercisesByUnit, mastery.exerciseAccessById],
+  )
+
+  const selectedUnit = useMemo(() => getPracticeUnitById(activeUnitId), [activeUnitId])
   const selectedExercise = useMemo(() => {
     const directMatch = getPracticeExerciseById(selectedExerciseId)
-    if (directMatch && directMatch.unitId === selectedUnitId) {
+    if (directMatch && directMatch.unitId === activeUnitId && mastery.exerciseAccessById[directMatch.id]?.unlocked) {
       return directMatch
     }
 
-    return exercisesByUnit[0] ?? null
-  }, [selectedExerciseId, selectedUnitId, exercisesByUnit])
+    return unlockedExercisesByUnit[0] ?? exercisesByUnit[0] ?? null
+  }, [selectedExerciseId, activeUnitId, exercisesByUnit, unlockedExercisesByUnit, mastery.exerciseAccessById])
 
   const selectedProgress = useMemo(() => {
     if (!selectedExercise) {
@@ -42,6 +62,14 @@ export function usePracticeMode({ applyProgramTemplate }: UsePracticeModeOptions
 
     return getPracticeProgressEntry(practiceProgress, selectedExercise.id)
   }, [practiceProgress, selectedExercise])
+
+  const selectedExerciseAccess = useMemo(() => {
+    if (!selectedExercise) {
+      return { unlocked: false, reason: 'No hay ejercicio disponible.' }
+    }
+
+    return mastery.exerciseAccessById[selectedExercise.id] ?? { unlocked: false, reason: 'Ejercicio bloqueado.' }
+  }, [mastery.exerciseAccessById, selectedExercise])
 
   const updatePracticeProgress = (updater: (current: PracticeProgress) => PracticeProgress) => {
     setPracticeProgress((current) => {
@@ -52,11 +80,24 @@ export function usePracticeMode({ applyProgramTemplate }: UsePracticeModeOptions
   }
 
   const handleUnitChange = (nextUnitId: PracticeUnitId) => {
+    const unitMastery = mastery.unitMasteryById[nextUnitId]
+    if (!unitMastery?.unlocked) {
+      return
+    }
+
     setSelectedUnitId(nextUnitId)
-    const fallbackExercise = getPracticeExercisesByUnitId(nextUnitId)[0]
+    const fallbackExercise = getPracticeExercisesByUnitId(nextUnitId).find((exercise) => mastery.exerciseAccessById[exercise.id]?.unlocked)
     if (fallbackExercise) {
       setSelectedExerciseId(fallbackExercise.id)
     }
+  }
+
+  const handleExerciseChange = (exerciseId: string) => {
+    if (!mastery.exerciseAccessById[exerciseId]?.unlocked) {
+      return
+    }
+
+    setSelectedExerciseId(exerciseId)
   }
 
   const markExerciseAttempt = (exerciseId: string) => {
@@ -65,7 +106,7 @@ export function usePracticeMode({ applyProgramTemplate }: UsePracticeModeOptions
       return {
         ...current,
         [exerciseId]: {
-          ...currentEntry,
+          ...completeStage(currentEntry, 'practica'),
           attempts: currentEntry.attempts + 1,
           lastAttemptAt: new Date().toISOString(),
         },
@@ -79,7 +120,7 @@ export function usePracticeMode({ applyProgramTemplate }: UsePracticeModeOptions
       return {
         ...current,
         [exerciseId]: {
-          ...currentEntry,
+          ...completeStage(currentEntry, 'resuelve'),
           completed: true,
           completedAt: currentEntry.completedAt ?? new Date().toISOString(),
         },
@@ -87,16 +128,46 @@ export function usePracticeMode({ applyProgramTemplate }: UsePracticeModeOptions
     })
   }
 
+  const markExerciseStageCompleted = (exerciseId: string, stageId: PracticeStageId) => {
+    updatePracticeProgress((current) => {
+      const currentEntry = getPracticeProgressEntry(current, exerciseId)
+      return {
+        ...current,
+        [exerciseId]: completeStage(currentEntry, stageId),
+      }
+    })
+  }
+
+  const saveExerciseReflection = (exerciseId: string, note: string) => {
+    const trimmed = note.trim()
+    if (!trimmed) {
+      return
+    }
+
+    updatePracticeProgress((current) => {
+      const currentEntry = getPracticeProgressEntry(current, exerciseId)
+      const nextEntry = completeStage(currentEntry, 'reflexiona')
+      return {
+        ...current,
+        [exerciseId]: {
+          ...nextEntry,
+          reflectionNote: trimmed,
+        },
+      }
+    })
+  }
+
   const loadSelectedExercise = () => {
-    if (!selectedExercise) {
+    if (!selectedExercise || !selectedExerciseAccess.unlocked) {
       return
     }
 
     applyProgramTemplate(selectedExercise.starterCode, selectedExercise.starterInputs)
+    markExerciseStageCompleted(selectedExercise.id, 'aprende')
   }
 
   const loadSelectedSolution = () => {
-    if (!selectedExercise) {
+    if (!selectedExercise || !selectedExerciseAccess.unlocked) {
       return
     }
 
@@ -109,19 +180,48 @@ export function usePracticeMode({ applyProgramTemplate }: UsePracticeModeOptions
   }
 
   return {
-    selectedUnitId,
+    selectedUnitId: activeUnitId,
     selectedExerciseId,
     practiceProgress,
     exercisesByUnit,
     selectedUnit,
     selectedExercise,
     selectedProgress,
-    setSelectedExerciseId,
+    selectedExerciseAccess,
+    selectedUnitUnlocked,
+    mastery,
+    stageFlow: practiceStageFlow,
+    setSelectedExerciseId: handleExerciseChange,
     handleUnitChange,
     markExerciseAttempt,
     markExerciseCompleted,
+    markExerciseStageCompleted,
+    saveExerciseReflection,
     loadSelectedExercise,
     loadSelectedSolution,
     resetPractice,
+  }
+}
+
+function completeStage(
+  entry: PracticeProgressEntry,
+  stageId: PracticeStageId,
+): PracticeProgressEntry {
+  const now = new Date().toISOString()
+  const stageCompletedAt = { ...entry.stageCompletedAt }
+
+  for (const stage of practiceStageFlow) {
+    if (!stageCompletedAt[stage.id]) {
+      stageCompletedAt[stage.id] = now
+    }
+
+    if (stage.id === stageId) {
+      break
+    }
+  }
+
+  return {
+    ...entry,
+    stageCompletedAt,
   }
 }

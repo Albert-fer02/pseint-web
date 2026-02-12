@@ -1,4 +1,5 @@
 export type PracticeLevel = 'Basico' | 'Intermedio' | 'Avanzado'
+export type PracticeStageId = 'aprende' | 'practica' | 'crea' | 'ejecuta' | 'resuelve' | 'reflexiona'
 
 export type PracticeUnitId =
   | 'u1-fundamentos'
@@ -42,6 +43,8 @@ export interface PracticeProgressEntry {
   completed: boolean
   lastAttemptAt: string | null
   completedAt: string | null
+  stageCompletedAt: Partial<Record<PracticeStageId, string>>
+  reflectionNote: string | null
 }
 
 export type PracticeProgress = Record<string, PracticeProgressEntry>

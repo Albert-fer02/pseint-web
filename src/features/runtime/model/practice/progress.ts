@@ -8,6 +8,8 @@ export function createDefaultPracticeProgressEntry(): PracticeProgressEntry {
     completed: false,
     lastAttemptAt: null,
     completedAt: null,
+    stageCompletedAt: {},
+    reflectionNote: null,
   }
 }
 
@@ -35,12 +37,28 @@ export function loadPracticeProgress(): PracticeProgress {
           completed: Boolean(value.completed),
           lastAttemptAt: typeof value.lastAttemptAt === 'string' ? value.lastAttemptAt : null,
           completedAt: typeof value.completedAt === 'string' ? value.completedAt : null,
+          stageCompletedAt: isStageCompletedAt(value.stageCompletedAt) ? value.stageCompletedAt : {},
+          reflectionNote: typeof value.reflectionNote === 'string' ? value.reflectionNote : null,
         },
       ]),
     )
   } catch {
     return {}
   }
+}
+
+function isStageCompletedAt(value: unknown): value is PracticeProgressEntry['stageCompletedAt'] {
+  if (!value || typeof value !== 'object') {
+    return false
+  }
+
+  for (const completedAt of Object.values(value)) {
+    if (completedAt !== null && typeof completedAt !== 'string') {
+      return false
+    }
+  }
+
+  return true
 }
 
 export function savePracticeProgress(progress: PracticeProgress): void {

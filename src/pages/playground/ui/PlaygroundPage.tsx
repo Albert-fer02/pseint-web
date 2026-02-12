@@ -11,7 +11,6 @@ import {
   type MobilePanelKey,
 } from '@/pages/playground/model/playgroundUiConfig'
 import {
-  practiceExercises,
   practiceUnits,
 } from '@/features/runtime/model/practiceExercises'
 import {
@@ -22,10 +21,6 @@ import { FlowchartCard } from '@/pages/playground/ui/components/FlowchartCard'
 import { FlowchartExpandedModal } from '@/pages/playground/ui/components/FlowchartExpandedModal'
 import { MobilePanelSelector } from '@/pages/playground/ui/components/MobilePanelSelector'
 import { MobileRunDock } from '@/pages/playground/ui/components/MobileRunDock'
-import { PracticeGuidedCard } from '@/pages/playground/ui/components/PracticeGuidedCard'
-import { RuntimeInputsForm } from '@/features/runtime/ui/RuntimeInputsForm'
-import { RuntimeOutputPanel } from '@/features/runtime/ui/RuntimeOutputPanel'
-import { LearningPathPanel } from '@/features/runtime/ui/LearningPathPanel'
 import { extractInputFields } from '@/shared/lib/pseint/analyzer'
 import { getPseintErrorHint } from '@/shared/lib/pseint/errorHints'
 import { buildFlowchart } from '@/shared/lib/pseint/flowchart'
@@ -38,6 +33,18 @@ const ProgramInsightsPanel = lazy(() =>
   import('@/features/analysis/ui/ProgramInsightsPanel').then((module) => ({ default: module.ProgramInsightsPanel })),
 )
 const AiTutorPanel = lazy(() => import('@/features/ai/ui/AiTutorPanel').then((module) => ({ default: module.AiTutorPanel })))
+const LearningPathPanel = lazy(() =>
+  import('@/features/runtime/ui/LearningPathPanel').then((module) => ({ default: module.LearningPathPanel })),
+)
+const PracticeGuidedCard = lazy(() =>
+  import('@/pages/playground/ui/components/PracticeGuidedCard').then((module) => ({ default: module.PracticeGuidedCard })),
+)
+const RuntimeInputsForm = lazy(() =>
+  import('@/features/runtime/ui/RuntimeInputsForm').then((module) => ({ default: module.RuntimeInputsForm })),
+)
+const RuntimeOutputPanel = lazy(() =>
+  import('@/features/runtime/ui/RuntimeOutputPanel').then((module) => ({ default: module.RuntimeOutputPanel })),
+)
 
 export function PlaygroundPage() {
   const [mobilePanel, setMobilePanel] = useState<MobilePanelKey>('inputs')
@@ -74,14 +81,18 @@ export function PlaygroundPage() {
     selectedUnit,
     selectedExercise,
     selectedProgress,
+    selectedExerciseAccess,
     setSelectedExerciseId,
     handleUnitChange,
     markExerciseAttempt,
     markExerciseCompleted,
+    markExerciseStageCompleted,
+    saveExerciseReflection,
     loadSelectedExercise,
     loadSelectedSolution,
     resetPractice,
-    practiceProgress,
+    mastery,
+    stageFlow,
   } = usePracticeMode({ applyProgramTemplate })
 
   const loadSelectedExampleAndShowInputs = () => {
@@ -118,14 +129,18 @@ export function PlaygroundPage() {
       return
     }
 
-    if (selectedExercise) {
+    if (selectedExercise && selectedExerciseAccess.unlocked) {
       markExerciseAttempt(selectedExercise.id)
     }
 
     try {
       const runtimeResult = await run(source, inputs)
+      if (selectedExercise && selectedExerciseAccess.unlocked) {
+        markExerciseStageCompleted(selectedExercise.id, 'ejecuta')
+      }
       if (
         selectedExercise &&
+        selectedExerciseAccess.unlocked &&
         selectedExercise.expectedOutputLines &&
         isExpectedOutputMatch(runtimeResult.execution.outputs, selectedExercise.expectedOutputLines)
       ) {
@@ -348,33 +363,52 @@ export function PlaygroundPage() {
         <div className="min-w-0 space-y-5">
           <Card className="min-w-0">
             <CardHeader>
-              <CardTitle>Ruta integral de aprendizaje</CardTitle>
+            <CardTitle>Ruta integral de aprendizaje</CardTitle>
               <CardDescription>Progreso por unidad y cobertura de temas del curso.</CardDescription>
             </CardHeader>
             <CardContent>
-              <LearningPathPanel units={practiceUnits} exercises={practiceExercises} progress={practiceProgress} />
+              <Suspense fallback={<p className="text-sm text-muted-foreground">Calculando ruta...</p>}>
+                <LearningPathPanel units={practiceUnits} mastery={mastery} />
+              </Suspense>
             </CardContent>
           </Card>
 
-          <PracticeGuidedCard
-            cardId={getMobilePanelSectionId('practice')}
-            cardClassName={`min-w-0 ${panelClass('practice')}`}
-            selectedUnitId={selectedUnitId}
-            selectedExercise={selectedExercise}
-            exercisesByUnit={exercisesByUnit}
-            selectedUnitTitle={selectedUnit?.title ?? 'Sin unidad'}
-            selectedProgress={selectedProgress}
-            onUnitChange={handleUnitChange}
-            onExerciseChange={setSelectedExerciseId}
-            onLoadExercise={loadSelectedExercise}
-            onLoadSolution={loadSelectedSolution}
-            onMarkCompleted={() => {
-              if (selectedExercise) {
-                markExerciseCompleted(selectedExercise.id)
-              }
-            }}
-            onResetProgress={resetPractice}
-          />
+          <Suspense fallback={<Card className={`min-w-0 ${panelClass('practice')}`}><CardContent className="py-6 text-sm text-muted-foreground">Cargando practica guiada...</CardContent></Card>}>
+            <PracticeGuidedCard
+              key={selectedExercise?.id ?? selectedUnitId}
+              cardId={getMobilePanelSectionId('practice')}
+              cardClassName={`min-w-0 ${panelClass('practice')}`}
+              selectedUnitId={selectedUnitId}
+              selectedExercise={selectedExercise}
+              exercisesByUnit={exercisesByUnit}
+              selectedUnitTitle={selectedUnit?.title ?? 'Sin unidad'}
+              selectedProgress={selectedProgress}
+              selectedExerciseAccess={selectedExerciseAccess}
+              stageFlow={stageFlow}
+              exerciseAccessById={mastery.exerciseAccessById}
+              unlockedUnitIds={mastery.unlockedUnitIds}
+              onUnitChange={handleUnitChange}
+              onExerciseChange={setSelectedExerciseId}
+              onLoadExercise={loadSelectedExercise}
+              onLoadSolution={loadSelectedSolution}
+              onMarkCompleted={() => {
+                if (selectedExercise) {
+                  markExerciseCompleted(selectedExercise.id)
+                }
+              }}
+              onCompleteStage={(stageId) => {
+                if (selectedExercise) {
+                  markExerciseStageCompleted(selectedExercise.id, stageId)
+                }
+              }}
+              onSaveReflection={(note) => {
+                if (selectedExercise) {
+                  saveExerciseReflection(selectedExercise.id, note)
+                }
+              }}
+              onResetProgress={resetPractice}
+            />
+          </Suspense>
 
           <Card id={getMobilePanelSectionId('inputs')} className={`min-w-0 ${panelClass('inputs')}`}>
             <CardHeader>
@@ -382,16 +416,18 @@ export function PlaygroundPage() {
               <CardDescription>Valores para las sentencias Leer.</CardDescription>
             </CardHeader>
             <CardContent>
-              <RuntimeInputsForm
-                fields={inputFields}
-                values={inputs}
-                onChange={(name, value) => {
-                  setInputs((prev) => ({
-                    ...prev,
-                    [name]: value,
-                  }))
-                }}
-              />
+              <Suspense fallback={<p className="text-sm text-muted-foreground">Cargando formulario...</p>}>
+                <RuntimeInputsForm
+                  fields={inputFields}
+                  values={inputs}
+                  onChange={(name, value) => {
+                    setInputs((prev) => ({
+                      ...prev,
+                      [name]: value,
+                    }))
+                  }}
+                />
+              </Suspense>
             </CardContent>
           </Card>
 
@@ -437,7 +473,9 @@ export function PlaygroundPage() {
               <CardDescription>Consola y estado final de variables.</CardDescription>
             </CardHeader>
             <CardContent>
-              <RuntimeOutputPanel execution={result?.execution ?? null} error={error} status={status} />
+              <Suspense fallback={<p className="text-sm text-muted-foreground">Preparando salida...</p>}>
+                <RuntimeOutputPanel execution={result?.execution ?? null} error={error} status={status} />
+              </Suspense>
               {result?.execution ? (
                 <p className="mt-3 text-xs text-muted-foreground">Pasos ejecutados: {result.execution.stepsExecuted}</p>
               ) : null}

@@ -7,6 +7,7 @@ export type {
   PracticeLevel,
   PracticeProgress,
   PracticeProgressEntry,
+  PracticeStageId,
   PracticeTopic,
   PracticeUnit,
   PracticeUnitId,
@@ -21,6 +22,20 @@ export {
   loadPracticeProgress,
   savePracticeProgress,
 } from './practice/progress'
+
+export {
+  computePracticeMastery,
+  getNextPendingStageId,
+  isStageCompleted,
+  isStageUnlocked,
+  LEVEL_MASTERY_UNLOCK_THRESHOLD,
+  practiceStageFlow,
+  UNIT_MASTERY_UNLOCK_THRESHOLD,
+  type PracticeExerciseAccess,
+  type PracticeMasterySnapshot,
+  type PracticeStageDefinition,
+  type PracticeUnitMastery,
+} from './practice/mastery'
 
 export function getPracticeExerciseById(id: string): PracticeExercise | null {
   const match = practiceExercises.find((exercise) => exercise.id === id)
