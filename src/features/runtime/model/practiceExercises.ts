@@ -44,6 +44,18 @@ export {
 } from './practice/stageProgress'
 
 export {
+  normalizeSourceForProgress,
+  recordPracticeAttempt,
+  recordPracticeCreation,
+  recordPracticeExecution,
+  recordPracticeLearned,
+  recordPracticeReflection,
+  recordPracticeSolved,
+  SOLUTION_REVIEW_MIN_ATTEMPTS,
+  type PracticeSourceSnapshot,
+} from './practice/progressEvents'
+
+export {
   buildPracticeCheckpoint,
   type PracticeCheckpoint,
 } from './practice/checkpoint'

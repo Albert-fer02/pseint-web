@@ -1,4 +1,9 @@
-import { mobilePanels, type MobilePanelKey } from '@/pages/playground/model/playgroundUiConfig'
+import {
+  getMobilePanelSectionId,
+  getMobilePanelTabId,
+  mobilePanels,
+  type MobilePanelKey,
+} from '@/pages/playground/model/playgroundUiConfig'
 import { cn } from '@/shared/lib/utils'
 
 interface MobilePanelSelectorProps {
@@ -11,18 +16,21 @@ export function MobilePanelSelector({ active, onChange }: MobilePanelSelectorPro
     <section className="space-y-1.5">
       <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Panel visible</p>
       <div className="-mx-1 overflow-x-auto px-1 pb-1">
-        <div className="inline-flex min-w-full gap-2 rounded-xl border border-border/80 bg-card/80 p-1">
+        <div className="inline-flex min-w-full gap-2 rounded-xl border border-border/80 bg-card/80 p-1" role="tablist" aria-label="Paneles de apoyo">
           {mobilePanels.map((panel) => (
             <button
               key={panel.key}
               type="button"
+              id={getMobilePanelTabId(panel.key)}
+              role="tab"
+              aria-selected={active === panel.key}
+              aria-controls={getMobilePanelSectionId(panel.key)}
               className={cn(
                 'h-10 shrink-0 rounded-lg px-3 text-xs font-medium transition-colors motion-spring',
                 active === panel.key
                   ? 'bg-primary text-primary-foreground shadow-sm'
                   : 'bg-transparent text-muted-foreground hover:bg-muted hover:text-foreground',
               )}
-              aria-pressed={active === panel.key}
               onClick={() => onChange(panel.key)}
             >
               {panel.label}

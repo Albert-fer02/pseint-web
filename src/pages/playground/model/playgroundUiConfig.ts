@@ -10,6 +10,7 @@ export const mobilePanels: Array<{ key: MobilePanelKey; label: string }> = [
 ]
 
 const MOBILE_PANEL_SCROLL_ID_PREFIX = 'mobile-panel'
+const MOBILE_PANEL_TAB_ID_PREFIX = 'mobile-tab'
 export const MOBILE_KEYBOARD_DELTA_THRESHOLD = 140
 export const AUTOSAVE_DELAY_MS = 450
 
@@ -25,4 +26,8 @@ export const quickSnippets: Array<{ id: string; label: string; content: string }
 
 export function getMobilePanelSectionId(panel: MobilePanelKey): string {
   return `${MOBILE_PANEL_SCROLL_ID_PREFIX}-${panel}`
+}
+
+export function getMobilePanelTabId(panel: MobilePanelKey): string {
+  return `${MOBILE_PANEL_TAB_ID_PREFIX}-${panel}`
 }

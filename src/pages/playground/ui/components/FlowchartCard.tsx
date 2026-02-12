@@ -7,6 +7,7 @@ const MermaidChart = lazy(() => import('@/shared/lib/mermaid/MermaidChart'))
 interface FlowchartCardProps {
   cardId: string
   cardClassName: string
+  ariaLabelledBy?: string
   flowchartPreview: string | null
   parserError: string | null
   shouldRenderDiagram: boolean
@@ -18,6 +19,7 @@ interface FlowchartCardProps {
 export function FlowchartCard({
   cardId,
   cardClassName,
+  ariaLabelledBy,
   flowchartPreview,
   parserError,
   shouldRenderDiagram,
@@ -26,7 +28,7 @@ export function FlowchartCard({
   onExpand,
 }: FlowchartCardProps) {
   return (
-    <Card id={cardId} className={cardClassName}>
+    <Card id={cardId} className={cardClassName} role="tabpanel" aria-labelledby={ariaLabelledBy}>
       <CardHeader className="space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="space-y-1">

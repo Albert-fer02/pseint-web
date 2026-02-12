@@ -16,6 +16,9 @@ This redesign prioritizes learning throughput over UI ornamentation. The objecti
 - Responsiveness and performance:
   - keep heavy panels lazy-loaded,
   - preserve bundle budgets to protect interaction latency.
+- Coherent state transitions:
+  - stage progression is event-driven and deterministic,
+  - avoid hidden side effects distributed across UI components.
 
 ## UX updates implemented
 
@@ -24,6 +27,8 @@ This redesign prioritizes learning throughput over UI ornamentation. The objecti
   - mission card,
   - compact stage rail,
   - active-stage action panel.
+- Consolidated progression logic into pure domain transitions (`progressEvents`) to keep hooks thin and testable.
+- Mobile panel selector now uses ARIA `tablist`/`tab` semantics with `tabpanel` linkage.
 - Redesigned learning path panel with:
   - overall mastery radar,
   - per-unit timeline visualization,
@@ -38,8 +43,13 @@ This redesign prioritizes learning throughput over UI ornamentation. The objecti
 - Core Web Vitals and INP guidance (INP replaced FID in March 2024):
   - https://web.dev/inp/
   - https://web.dev/blog/inp-cwv-launch
+- React guidance for state structure and reducer extraction:
+  - https://react.dev/learn/choosing-the-state-structure
+  - https://react.dev/learn/extracting-state-logic-into-a-reducer
 - Universal Design for Learning 3.0 (learning accessibility):
   - https://udlguidelines.cast.org/
+- WAI-ARIA Authoring Practices (Tabs pattern):
+  - https://www.w3.org/WAI/ARIA/apg/patterns/tabs/
 - Evidence on metacognition and self-regulated learning:
   - https://educationendowmentfoundation.org.uk/education-evidence/teaching-learning-toolkit/metacognition-and-self-regulation
 - Evidence on mastery learning:

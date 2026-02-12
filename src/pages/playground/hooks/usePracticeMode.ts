@@ -1,19 +1,25 @@
 import { useMemo, useState } from 'react'
 import {
-  completeStageIfAllowed,
   computePracticeMastery,
   createDefaultPracticeProgressEntry,
   getPracticeExerciseById,
   getPracticeExercisesByUnitId,
   getPracticeProgressEntry,
   getPracticeUnitById,
-  hasValidReflection,
   loadPracticeProgress,
+  normalizeSourceForProgress,
   practiceExercises,
   practiceUnits,
+  recordPracticeAttempt,
+  recordPracticeCreation,
+  recordPracticeExecution,
+  recordPracticeLearned,
+  recordPracticeReflection,
+  recordPracticeSolved,
   practiceStageFlow,
   savePracticeProgress,
   type PracticeProgress,
+  type PracticeProgressEntry,
   type PracticeStageId,
   type PracticeUnitId,
 } from '@/features/runtime/model/practiceExercises'
@@ -105,15 +111,11 @@ export function usePracticeMode({ applyProgramTemplate }: UsePracticeModeOptions
     updatePracticeProgress((current) => {
       const currentEntry = getPracticeProgressEntry(current, exerciseId)
       const now = new Date().toISOString()
-      const withPracticeStage = completeStageIfAllowed(currentEntry, 'practica', now)
+      const nextEntry = recordPracticeAttempt(currentEntry, now)
 
       return {
         ...current,
-        [exerciseId]: {
-          ...withPracticeStage,
-          attempts: currentEntry.attempts + 1,
-          lastAttemptAt: now,
-        },
+        [exerciseId]: nextEntry,
       }
     })
   }
@@ -134,9 +136,19 @@ export function usePracticeMode({ applyProgramTemplate }: UsePracticeModeOptions
 
     updatePracticeProgress((current) => {
       const currentEntry = getPracticeProgressEntry(current, exerciseId)
+      const now = new Date().toISOString()
+      const nextEntry = recordPracticeCreation(
+        currentEntry,
+        {
+          currentSource,
+          starterSource,
+          solutionSource,
+        },
+        now,
+      )
       return {
         ...current,
-        [exerciseId]: completeStageIfAllowed(currentEntry, 'crea'),
+        [exerciseId]: nextEntry,
       }
     })
   }
@@ -145,16 +157,11 @@ export function usePracticeMode({ applyProgramTemplate }: UsePracticeModeOptions
     updatePracticeProgress((current) => {
       const currentEntry = getPracticeProgressEntry(current, exerciseId)
       const now = new Date().toISOString()
-      const withSolvedStage = completeStageIfAllowed(currentEntry, 'resuelve', now)
-      const solved = Boolean(withSolvedStage.stageCompletedAt.resuelve)
+      const nextEntry = recordPracticeSolved(currentEntry, now)
 
       return {
         ...current,
-        [exerciseId]: {
-          ...withSolvedStage,
-          completed: currentEntry.completed || solved,
-          completedAt: currentEntry.completedAt ?? (solved ? now : null),
-        },
+        [exerciseId]: nextEntry,
       }
     })
   }
@@ -162,28 +169,23 @@ export function usePracticeMode({ applyProgramTemplate }: UsePracticeModeOptions
   const markExerciseStageCompleted = (exerciseId: string, stageId: PracticeStageId) => {
     updatePracticeProgress((current) => {
       const currentEntry = getPracticeProgressEntry(current, exerciseId)
+      const now = new Date().toISOString()
+      const nextEntry = getNextEntryByStage(stageId, currentEntry, now)
       return {
         ...current,
-        [exerciseId]: completeStageIfAllowed(currentEntry, stageId),
+        [exerciseId]: nextEntry,
       }
     })
   }
 
   const saveExerciseReflection = (exerciseId: string, note: string) => {
-    const trimmed = note.trim()
-    if (!hasValidReflection(trimmed)) {
-      return
-    }
-
     updatePracticeProgress((current) => {
       const currentEntry = getPracticeProgressEntry(current, exerciseId)
-      const nextEntry = completeStageIfAllowed(currentEntry, 'reflexiona')
+      const now = new Date().toISOString()
+      const nextEntry = recordPracticeReflection(currentEntry, note, now)
       return {
         ...current,
-        [exerciseId]: {
-          ...nextEntry,
-          reflectionNote: trimmed,
-        },
+        [exerciseId]: nextEntry,
       }
     })
   }
@@ -234,6 +236,18 @@ export function usePracticeMode({ applyProgramTemplate }: UsePracticeModeOptions
   }
 }
 
-function normalizeSourceForProgress(source: string): string {
-  return source.replace(/\s+/g, ' ').trim()
+function getNextEntryByStage(
+  stageId: PracticeStageId,
+  currentEntry: PracticeProgressEntry,
+  now: string,
+) {
+  if (stageId === 'aprende') {
+    return recordPracticeLearned(currentEntry, now)
+  }
+
+  if (stageId === 'ejecuta') {
+    return recordPracticeExecution(currentEntry, now)
+  }
+
+  return currentEntry
 }
