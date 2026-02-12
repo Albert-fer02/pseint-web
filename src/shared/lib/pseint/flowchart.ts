@@ -202,6 +202,10 @@ function statementToLabel(
     return `${targetToString(statement.target)} <- ${expressionToString(statement.expression)}`
   }
 
+  if (statement.kind === 'call') {
+    return `${statement.name}(${statement.args.map((expression) => expressionToString(expression)).join(', ')})`
+  }
+
   const writeTail = statement.noNewline ? ' Sin Saltar' : ''
   return `Escribir ${statement.expressions.map((expression) => expressionToString(expression)).join(', ')}${writeTail}`
 }

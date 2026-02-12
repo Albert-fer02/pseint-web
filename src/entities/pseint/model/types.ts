@@ -7,6 +7,12 @@ export interface ProgramDeclaration {
   dimensions: number[] | null
 }
 
+export interface ProgramConstant {
+  kind: 'constant'
+  name: string
+  expression: Expression
+}
+
 export type TargetRef =
   | { kind: 'variable'; name: string }
   | { kind: 'arrayElement'; name: string; indices: Expression[] }
@@ -31,6 +37,7 @@ export type Statement =
   | { kind: 'read'; target: TargetRef }
   | { kind: 'write'; expressions: Expression[]; noNewline: boolean }
   | { kind: 'assign'; target: TargetRef; expression: Expression }
+  | { kind: 'call'; name: string; args: Expression[] }
   | { kind: 'if'; condition: Expression; thenBranch: Statement[]; elseBranch: Statement[] }
   | { kind: 'for'; iterator: string; start: Expression; end: Expression; step: Expression; body: Statement[] }
   | { kind: 'while'; condition: Expression; body: Statement[] }
@@ -41,6 +48,7 @@ export interface FunctionParameter {
   name: string
   isArray: boolean
   arrayRank: number
+  byReference: boolean
 }
 
 export interface ProgramFunction {
@@ -48,14 +56,25 @@ export interface ProgramFunction {
   returnVariable: string
   parameters: FunctionParameter[]
   declarations: ProgramDeclaration[]
+  constants: ProgramConstant[]
+  statements: Statement[]
+}
+
+export interface ProgramProcedure {
+  name: string
+  parameters: FunctionParameter[]
+  declarations: ProgramDeclaration[]
+  constants: ProgramConstant[]
   statements: Statement[]
 }
 
 export interface ProgramAst {
   name: string
   declarations: ProgramDeclaration[]
+  constants: ProgramConstant[]
   statements: Statement[]
   functions: ProgramFunction[]
+  procedures: ProgramProcedure[]
 }
 
 export type RuntimeScalar = string | number | boolean

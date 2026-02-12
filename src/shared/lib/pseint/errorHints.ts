@@ -37,6 +37,10 @@ export function getPseintErrorHint(rawMessage: string): string | null {
     return 'Cada Funcion debe cerrarse con FinFuncion.'
   }
 
+  if (/Falta "FinSubProceso"/i.test(message)) {
+    return 'Cada SubProceso debe cerrarse con FinSubProceso.'
+  }
+
   const undeclaredVariable = message.match(/Variable no declarada:\s*([A-Za-z_][A-Za-z0-9_]*)/i)
   if (undeclaredVariable) {
     return `Declara "${undeclaredVariable[1]}" con Definir antes de usarla.`

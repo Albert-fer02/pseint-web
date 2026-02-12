@@ -95,6 +95,10 @@ function collectStatementStats(statements: Statement[], depth = 1): StatementSta
       continue
     }
 
+    if (statement.kind === 'call') {
+      continue
+    }
+
     if (statement.kind === 'if') {
       result.conditionals += 1
       result.maxNesting = Math.max(result.maxNesting, depth)
@@ -115,14 +119,16 @@ function collectStatementStats(statements: Statement[], depth = 1): StatementSta
       continue
     }
 
-    result.conditionals += 1
-    result.maxNesting = Math.max(result.maxNesting, depth)
-    for (const caseBranch of statement.cases) {
-      const caseStats = collectStatementStats(caseBranch.body, depth + 1)
-      mergeStats(result, caseStats)
+    if (statement.kind === 'switch') {
+      result.conditionals += 1
+      result.maxNesting = Math.max(result.maxNesting, depth)
+      for (const caseBranch of statement.cases) {
+        const caseStats = collectStatementStats(caseBranch.body, depth + 1)
+        mergeStats(result, caseStats)
+      }
+      const defaultStats = collectStatementStats(statement.defaultBranch, depth + 1)
+      mergeStats(result, defaultStats)
     }
-    const defaultStats = collectStatementStats(statement.defaultBranch, depth + 1)
-    mergeStats(result, defaultStats)
   }
 
   return result

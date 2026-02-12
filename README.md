@@ -73,12 +73,14 @@ Importante:
 - Editor de pseudocodigo con ejemplo precargado.
 - Autosave por proyecto en localStorage (crear, renombrar, eliminar y cambiar de proyecto).
 - Carga de ejemplos rapidos desde selector.
+- Ruta integral por unidades (fundamentos, control, estructuras, modularidad y algoritmos) con progreso.
+- Contenido de practica modularizado por unidad (`src/features/runtime/model/practice/exercises/*`).
 - Resaltado de sintaxis PSeInt (keywords, tipos, funciones, operadores, comentarios, strings).
 - Autocompletado PSeInt con snippets rapidos.
 - Formateo basico de pseudocodigo.
 - Atajo de ejecucion `Ctrl/Cmd + Enter`.
 - Deteccion de entradas a partir de `Leer`.
-- Parser y runtime basico (`Definir`, `Leer`, `Escribir`, asignaciones, `Si/Sino`, `Subcadena`).
+- Parser y runtime con soporte de curso (`Definir`, `Constante`, `Leer`, `Escribir`, asignaciones, `Si/Sino`, `Segun`, ciclos, funciones y `SubProceso` con parametros por referencia).
 - Salida de consola y snapshot de variables finales.
 - Analisis automatico en vivo: nivel (`Basico/Intermedio/Avanzado`), complejidad, nesting, ciclomatica y recomendaciones.
 - Diagrama de flujo live generado desde AST mientras editas.
@@ -103,6 +105,7 @@ src/
 ## Fuente de verdad de diseño
 
 - `docs/DESIGN_SPEC_V1.md`
+- `docs/CURRICULUM_ARCHITECTURE.md`
 
 Incluye tokens, motion, ergonomia movil, checklist de accesibilidad y reglas de coherencia visual.
 

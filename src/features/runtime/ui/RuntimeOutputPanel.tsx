@@ -249,6 +249,9 @@ function formatTraceMarker(marker: RuntimeExecution['trace'][number]['marker'] |
   if (marker === 'assign') {
     return 'Sentencia: Asignacion'
   }
+  if (marker === 'call') {
+    return 'Sentencia: Llamada'
+  }
   if (marker === 'if') {
     return 'Sentencia: Si'
   }

@@ -93,6 +93,18 @@ const controlFlowExtendedSource = `Algoritmo ControlFlujoExtendido
     Escribir Longitud(Mayusculas(Concatenar("ab", "c")));
 FinAlgoritmo`
 
+const constantsAndProceduresSource = `Algoritmo ConstantesYSubprocesos
+    Definir monto Como Real;
+    Constante IGV <- 0.18;
+    Leer monto;
+    aplicarIgv(monto);
+    Escribir "Total: ", monto;
+FinAlgoritmo
+
+SubProceso aplicarIgv(valor Por Referencia)
+    valor <- valor + valor * IGV;
+FinSubProceso`
+
 describe('parseProgram', () => {
   it('parses declarations and statements', () => {
     const ast = parseProgram(source)
@@ -199,7 +211,16 @@ FinAlgoritmo
 Mientras condicion Hacer
 FinMientras`
 
-    expect(() => parseProgram(misplacedStatementSource)).toThrowError(/fuera de Algoritmo o Funcion/i)
+    expect(() => parseProgram(misplacedStatementSource)).toThrowError(/fuera de Algoritmo, Funcion o SubProceso/i)
+  })
+
+  it('supports constants and SubProceso with by-reference parameters', () => {
+    const ast = parseProgram(constantsAndProceduresSource)
+
+    expect(ast.constants).toHaveLength(1)
+    expect(ast.procedures).toHaveLength(1)
+    expect(ast.procedures[0]?.parameters[0]?.byReference).toBe(true)
+    expect(ast.statements.some((statement) => statement.kind === 'call')).toBe(true)
   })
 })
 
@@ -323,5 +344,23 @@ FinAlgoritmo`
     expect(result.outputs).toEqual(['otro', '10', 'Verdadero', '3'])
     expect(result.variables.acumulado).toBe(10)
     expect(result.variables.numero).toBe(0)
+  })
+
+  it('executes constants and procedures with by-reference write back', () => {
+    const ast = parseProgram(constantsAndProceduresSource)
+    const result = executeProgram(ast, { monto: '100' })
+
+    expect(result.outputs).toEqual(['Total: 118'])
+    expect(result.variables.monto).toBe(118)
+  })
+
+  it('throws when trying to reassign a constant', () => {
+    const invalidConstantReassign = `Algoritmo ReasignarConstante
+    Constante IGV <- 0.18;
+    IGV <- 0.2;
+FinAlgoritmo`
+
+    const ast = parseProgram(invalidConstantReassign)
+    expect(() => executeProgram(ast, {})).toThrowError(/constante/i)
   })
 })
