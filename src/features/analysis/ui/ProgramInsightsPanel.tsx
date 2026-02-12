@@ -7,13 +7,23 @@ interface ProgramInsightsPanelProps {
 
 export function ProgramInsightsPanel({ insights }: ProgramInsightsPanelProps) {
   const bandVariant = insights.complexityBand === 'Baja' ? 'secondary' : insights.complexityBand === 'Media' ? 'outline' : 'default'
+  const complexityPercent = Math.min(100, Math.max(0, insights.complexityScore * 10))
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-2">
-        <Badge variant="secondary">Nivel: {insights.estimatedLevel}</Badge>
-        <Badge variant={bandVariant}>Complejidad: {insights.complexityBand}</Badge>
-        <Badge variant="outline">Score: {insights.complexityScore}/10</Badge>
+      <div className="rounded-xl border border-border/80 bg-card/85 p-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge variant="secondary">Nivel: {insights.estimatedLevel}</Badge>
+          <Badge variant={bandVariant}>Complejidad: {insights.complexityBand}</Badge>
+          <Badge variant="outline">Score: {insights.complexityScore}/10</Badge>
+        </div>
+
+        <div className="mt-3 space-y-1">
+          <p className="text-xs text-muted-foreground">Carga de complejidad estimada</p>
+          <div className="h-2 rounded-full bg-muted">
+            <div className="h-full rounded-full bg-primary transition-[width] duration-300 ease-out" style={{ width: `${complexityPercent}%` }} />
+          </div>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2 md:grid-cols-3">

@@ -15,21 +15,30 @@ export function RuntimeInputsForm({ fields, values, onChange }: RuntimeInputsFor
 
   return (
     <div className="space-y-3">
-      {fields.map((field) => (
-        <label key={field.name} className="block space-y-1.5">
-          <span className="flex flex-wrap items-center gap-2 text-sm font-medium text-foreground">
-            {field.name}
-            <Badge variant="outline">{field.varType}</Badge>
-          </span>
-          <Input
-            type="text"
-            className="text-base md:text-sm"
-            value={values[field.name] ?? ''}
-            onChange={(event) => onChange(field.name, event.target.value)}
-            placeholder={`Ingresa ${field.name}`}
-          />
-        </label>
-      ))}
+      <p className="text-xs text-muted-foreground">
+        Completa estas entradas para ejecutar escenarios de prueba y validar tu solución.
+      </p>
+
+      <div className="space-y-2">
+        {fields.map((field, index) => (
+          <label key={field.name} className="block space-y-1.5 rounded-lg border border-border/75 bg-card/75 p-3">
+            <span className="flex flex-wrap items-center gap-2 text-sm font-medium text-foreground">
+              <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full border border-border bg-background px-1 text-[11px] text-muted-foreground">
+                {index + 1}
+              </span>
+              {field.name}
+              <Badge variant="outline">{field.varType}</Badge>
+            </span>
+            <Input
+              type="text"
+              className="text-base md:text-sm"
+              value={values[field.name] ?? ''}
+              onChange={(event) => onChange(field.name, event.target.value)}
+              placeholder={`Ingresa ${field.name}`}
+            />
+          </label>
+        ))}
+      </div>
     </div>
   )
 }

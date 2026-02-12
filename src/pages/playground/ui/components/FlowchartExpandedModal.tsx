@@ -15,8 +15,8 @@ export function FlowchartExpandedModal({ open, flowchartPreview, onClose }: Flow
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-background/96 p-3 backdrop-blur-sm md:p-5">
-      <div className="mx-auto flex h-full w-full max-w-5xl flex-col rounded-2xl border border-border bg-card">
+    <div className="fixed inset-0 z-50 bg-background/95 p-3 backdrop-blur-sm md:p-5">
+      <div className="mx-auto flex h-full w-full max-w-5xl flex-col rounded-2xl border border-border bg-card shadow-[0_24px_56px_rgba(2,6,23,0.28)]">
         <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
           <div className="space-y-0.5">
             <p className="text-sm font-semibold text-foreground">Diagrama en vista ampliada</p>
@@ -27,7 +27,7 @@ export function FlowchartExpandedModal({ open, flowchartPreview, onClose }: Flow
           </Button>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-auto p-3 md:p-5">
+        <div className="min-h-0 flex-1 overflow-auto bg-muted/20 p-3 md:p-5">
           <Suspense fallback={<p className="text-sm text-muted-foreground">Cargando renderer de diagramas...</p>}>
             <MermaidChart chart={flowchartPreview} expanded />
           </Suspense>

@@ -11,13 +11,14 @@ export function RootLayout() {
         Saltar al contenido
       </a>
 
-      <header className="sticky top-0 z-30 border-b border-border/80 bg-background/95 md:bg-background/85 md:backdrop-blur">
+      <header className="sticky top-0 z-30 border-b border-border/80 bg-background/94 md:bg-background/82 md:backdrop-blur">
         <div className="relative mx-auto flex w-full max-w-7xl flex-col gap-3 px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-4 md:px-6 md:py-4">
-          <div className="min-w-0 pr-24 space-y-1 sm:pr-0">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">PSeInt Lab</p>
+          <div className="min-w-0 space-y-1 pr-24 sm:pr-0">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">PSeInt Learning Studio</p>
             <h1 className="text-base font-semibold leading-tight tracking-tight sm:text-xl md:text-2xl">
-              Editor, ejecucion y diagrama
+              Aprende, practica y ejecuta en un solo flujo
             </h1>
+            <p className="text-xs text-muted-foreground">Diseñado para progresión por etapas con feedback inmediato.</p>
           </div>
 
           <div className="absolute right-3 top-3 sm:static sm:right-auto sm:top-auto">
@@ -28,7 +29,7 @@ export function RootLayout() {
 
       <main
         id="main-content"
-        className="mx-auto w-full max-w-7xl px-3 py-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] sm:px-4 md:px-6 md:py-8 md:pb-8"
+        className="mx-auto w-full max-w-7xl px-3 py-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] sm:px-4 md:px-6 md:py-7 md:pb-8"
       >
         <Outlet />
       </main>

@@ -35,11 +35,12 @@ This redesign prioritizes learning throughput over UI ornamentation. The objecti
 - WCAG 2.2 recommendation and updates:
   - https://www.w3.org/TR/WCAG22/
   - https://www.w3.org/WAI/standards-guidelines/wcag/new-in-22/
-- Core Web Vitals and INP guidance:
+- Core Web Vitals and INP guidance (INP replaced FID in March 2024):
   - https://web.dev/inp/
+  - https://web.dev/blog/inp-cwv-launch
 - Universal Design for Learning 3.0 (learning accessibility):
   - https://udlguidelines.cast.org/
-- Evidence on metacognition and self-regulated learning (updated toolkit page):
+- Evidence on metacognition and self-regulated learning:
   - https://educationendowmentfoundation.org.uk/education-evidence/teaching-learning-toolkit/metacognition-and-self-regulation
 - Evidence on mastery learning:
   - https://educationendowmentfoundation.org.uk/education-evidence/teaching-learning-toolkit/mastery-learning

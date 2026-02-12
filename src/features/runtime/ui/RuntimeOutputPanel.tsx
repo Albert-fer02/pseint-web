@@ -126,7 +126,7 @@ export function RuntimeOutputPanel({ execution, error, status }: RuntimeOutputPa
   return (
     <div className="space-y-3">
       {currentStep ? (
-        <div className="space-y-2 rounded-xl border border-border bg-card p-3">
+        <div className="space-y-3 rounded-xl border border-border bg-card p-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               Paso a paso ({boundedIndex + 1}/{execution.trace.length})
@@ -136,6 +136,19 @@ export function RuntimeOutputPanel({ execution, error, status }: RuntimeOutputPa
               <p>Paso motor: {currentStep.stepNumber}</p>
             </div>
           </div>
+
+          <label className="block space-y-1">
+            <span className="text-[11px] uppercase tracking-wide text-muted-foreground">Timeline de ejecucion</span>
+            <input
+              type="range"
+              min={0}
+              max={Math.max(0, execution.trace.length - 1)}
+              value={boundedIndex}
+              onChange={(event) => moveToStep(Number(event.target.value))}
+              className="h-2 w-full cursor-pointer accent-[var(--primary)]"
+              aria-label="Mover entre pasos de ejecución"
+            />
+          </label>
 
           <div className="flex flex-wrap gap-2">
             <Button
@@ -182,9 +195,9 @@ export function RuntimeOutputPanel({ execution, error, status }: RuntimeOutputPa
         </div>
       ) : null}
 
-      <div className="rounded-xl border border-border bg-muted/40 p-3">
+      <div className="rounded-xl border border-border bg-muted/35 p-3">
         <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Consola</p>
-        <div className="space-y-1 break-words font-mono text-sm text-foreground">
+        <div className="max-h-52 space-y-1 overflow-auto break-words rounded-lg border border-border/60 bg-card/85 p-2 font-mono text-sm text-foreground">
           {outputsToRender.map((line, index) => (
             <p key={`${line}-${index}`}>{line}</p>
           ))}

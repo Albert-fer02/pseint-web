@@ -49,7 +49,7 @@ export function MobileRunDock({ onRun, disabled, statusText, hasParserError }: M
   }
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-background/95 px-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-3 sm:px-4 md:hidden">
+    <div className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-background/94 px-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-3 shadow-[0_-12px_24px_rgba(2,6,23,0.12)] backdrop-blur md:hidden">
       <p className="mb-2 text-center text-[11px] text-muted-foreground">
         {hasParserError ? 'Corrige el error de parseo para ejecutar.' : 'Accion principal en zona ergonomica (pulgar).'}
       </p>
