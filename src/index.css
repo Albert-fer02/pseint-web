@@ -71,44 +71,44 @@
 }
 
 .theme-oled {
-  --background: #000000;
-  --foreground: #f5f7fa;
+  --background: #121212;
+  --foreground: #f3f5f8;
 
-  --card: #050505;
-  --card-foreground: #f5f7fa;
-  --popover: #050505;
-  --popover-foreground: #f5f7fa;
+  --card: #1e1e1e;
+  --card-foreground: #f3f5f8;
+  --popover: #1f2024;
+  --popover-foreground: #f3f5f8;
 
-  --primary: #16a34a;
-  --primary-foreground: #ecfdf3;
-  --secondary: #0f172a;
-  --secondary-foreground: #d2d9e3;
+  --primary: #22c55e;
+  --primary-foreground: #052e16;
+  --secondary: #1d2a24;
+  --secondary-foreground: #d6f5e2;
 
-  --muted: #0c111a;
-  --muted-foreground: #9ba6b8;
-  --accent: #101b2d;
+  --muted: #24262b;
+  --muted-foreground: #b3bccb;
+  --accent: #1d2735;
   --accent-foreground: #e5edf9;
 
   --destructive: #f87171;
   --destructive-foreground: #fee2e2;
 
-  --border: #1d2430;
-  --input: #1a212d;
+  --border: #30353f;
+  --input: #2a2f38;
   --ring: #22c55e;
 
   --page-gradient:
-    radial-gradient(circle at 15% 10%, rgba(34, 197, 94, 0.16), transparent 32%),
-    radial-gradient(circle at 84% 8%, rgba(14, 165, 233, 0.14), transparent 28%);
+    radial-gradient(circle at 15% 10%, rgba(34, 197, 94, 0.14), transparent 34%),
+    radial-gradient(circle at 84% 8%, rgba(14, 165, 233, 0.12), transparent 32%);
 
-  --syntax-keyword: #22d3ee;
-  --syntax-type: #c084fc;
-  --syntax-function: #60a5fa;
-  --syntax-string: #fbbf24;
-  --syntax-number: #34d399;
-  --syntax-boolean: #f472b6;
-  --syntax-comment: #8ea2bd;
-  --syntax-operator: #d6e2f1;
-  --syntax-variable: #f5f7fa;
+  --syntax-keyword: #4ade80;
+  --syntax-type: #c4b5fd;
+  --syntax-function: #93c5fd;
+  --syntax-string: #fcd34d;
+  --syntax-number: #86efac;
+  --syntax-boolean: #f9a8d4;
+  --syntax-comment: #9fb0c8;
+  --syntax-operator: #e2e8f0;
+  --syntax-variable: #f3f5f8;
 }
 
 :root {
@@ -233,6 +233,11 @@ iframe {
   --editor-height: clamp(19rem, 54vh, 33rem);
 }
 
+.cm-editor,
+.cm-scroller {
+  font-family: "JetBrains Mono", "Fira Code", "Source Code Pro", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
 @supports (height: 100dvh) {
   .pseint-editor-shell {
     --editor-height: clamp(18rem, 56dvh, 33rem);
@@ -256,37 +261,5 @@ iframe {
   .cm-scroller {
     font-size: 14px;
     line-height: 1.5;
-  }
-}
-
-@media (max-width: 767px) {
-  input,
-  select,
-  textarea {
-    font-size: 16px;
-  }
-}
-
-.cm-editor,
-.cm-scroller {
-  font-family: "JetBrains Mono", "Fira Code", ui-monospace, SFMono-Regular, Menlo, monospace;
-}
-
-.cm-editor {
-  background: color-mix(in srgb, var(--card) 92%, black 8%);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
-  }
-
-  .learning-focus-sheen::after {
-    animation: none;
   }
 }

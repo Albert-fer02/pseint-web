@@ -53,7 +53,7 @@ export function LearningPathPanel({ units, mastery }: LearningPathPanelProps) {
               <article
                 className={cn(
                   'rounded-xl border p-3 transition-colors',
-                  isLocked ? 'border-border/70 bg-card/70' : 'border-primary/20 bg-primary/5',
+                  isLocked ? 'border-border/70 bg-card/70 opacity-75' : 'border-primary/20 bg-primary/5',
                 )}
               >
                 <div className="flex items-start gap-3">
@@ -84,22 +84,31 @@ export function LearningPathPanel({ units, mastery }: LearningPathPanelProps) {
                       <div className="h-full rounded-full bg-primary transition-[width] duration-300 ease-out" style={{ width: `${completionRate}%` }} />
                     </div>
 
-                    <div className="grid gap-2 text-xs text-muted-foreground sm:grid-cols-3">
-                      <p>Basico: {unitMastery?.levelCompletionRate.Basico ?? 0}%</p>
-                      <p>Intermedio: {unitMastery?.levelCompletionRate.Intermedio ?? 0}%</p>
-                      <p>Avanzado: {unitMastery?.levelCompletionRate.Avanzado ?? 0}%</p>
-                    </div>
+                    {isLocked ? (
+                      <div className="rounded-md border border-border/70 bg-muted/30 px-2 py-1 text-xs text-muted-foreground">
+                        Desbloquea esta unidad para ver mastery por nivel.
+                      </div>
+                    ) : (
+                      <div className="grid gap-2 text-xs text-muted-foreground sm:grid-cols-3">
+                        <p>Basico: {unitMastery?.levelCompletionRate.Basico ?? 0}%</p>
+                        <p>Intermedio: {unitMastery?.levelCompletionRate.Intermedio ?? 0}%</p>
+                        <p>Avanzado: {unitMastery?.levelCompletionRate.Avanzado ?? 0}%</p>
+                      </div>
+                    )}
 
                     <div className="flex flex-wrap gap-2">
                       {unit.topics.map((topic) => (
-                        <Badge key={topic.id} variant="outline">
+                        <Badge key={topic.id} variant="outline" className={cn('rounded-md px-2 py-1', isLocked ? 'opacity-70' : '')}>
                           {topic.title}
                         </Badge>
                       ))}
                     </div>
 
                     {isLocked ? (
-                      <p className="rounded-md border border-amber-500/35 bg-amber-500/10 px-2 py-1 text-xs text-amber-700">
+                      <p
+                        className="rounded-md border px-2 py-1 text-xs text-foreground/85"
+                        style={{ borderColor: 'color-mix(in srgb, #f59e0b 36%, transparent)', backgroundColor: 'color-mix(in srgb, #f59e0b 10%, transparent)' }}
+                      >
                         {unitMastery?.unlockRequirement ?? 'Completa la unidad previa para desbloquear.'}
                       </p>
                     ) : null}

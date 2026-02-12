@@ -1,7 +1,6 @@
 import { examplePrograms } from '@/features/runtime/model/examplePrograms'
 import { PseudocodeEditor } from '@/features/editor/ui/PseudocodeEditor'
-import { MobilePanelSelector } from '@/pages/playground/ui/components/MobilePanelSelector'
-import { quickSnippets, type MobilePanelKey } from '@/pages/playground/model/playgroundUiConfig'
+import { quickSnippets } from '@/pages/playground/model/playgroundUiConfig'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/ui/card'
 
@@ -19,7 +18,6 @@ interface PlaygroundEditorCardProps {
   parserError: string | null
   parserHint: string | null
   isAnalysisPending: boolean
-  mobilePanel: MobilePanelKey
   runButtonText: string
   isRunDisabled: boolean
   onSwitchProject: (projectId: string) => void
@@ -33,7 +31,6 @@ interface PlaygroundEditorCardProps {
   onAppendSnippet: (snippet: string) => void
   onRunProgram: () => void
   onRestoreDefault: () => void
-  onMobilePanelChange: (panel: MobilePanelKey) => void
 }
 
 export function PlaygroundEditorCard({
@@ -45,7 +42,6 @@ export function PlaygroundEditorCard({
   parserError,
   parserHint,
   isAnalysisPending,
-  mobilePanel,
   runButtonText,
   isRunDisabled,
   onSwitchProject,
@@ -59,10 +55,9 @@ export function PlaygroundEditorCard({
   onAppendSnippet,
   onRunProgram,
   onRestoreDefault,
-  onMobilePanelChange,
 }: PlaygroundEditorCardProps) {
   return (
-    <Card className="min-w-0">
+    <Card className="min-w-0 border-border/80 bg-card/92">
       <CardHeader className="space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-3 sm:flex-nowrap">
           <div className="min-w-0">
@@ -75,7 +70,7 @@ export function PlaygroundEditorCard({
             className="w-full sm:w-auto"
             onClick={onRestoreDefault}
           >
-            Restaurar ejemplo
+            Restaurar base
           </Button>
         </div>
       </CardHeader>
@@ -97,15 +92,23 @@ export function PlaygroundEditorCard({
                 ))}
               </select>
             </label>
-            <div className="grid grid-cols-3 gap-2">
-              <Button type="button" variant="outline" onClick={onCreateProject}>
+            <div className="flex items-center gap-2">
+              <Button type="button" variant="outline" className="flex-1" onClick={onCreateProject}>
                 Nuevo
               </Button>
-              <Button type="button" variant="outline" onClick={onRenameProject}>
-                Renombrar
+              <Button type="button" variant="outline" size="sm" onClick={onRenameProject} aria-label="Renombrar proyecto" title="Renombrar proyecto">
+                Ren.
               </Button>
-              <Button type="button" variant="outline" onClick={onDeleteProject} disabled={projects.length <= 1}>
-                Eliminar
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={onDeleteProject}
+                disabled={projects.length <= 1}
+                aria-label="Eliminar proyecto"
+                title="Eliminar proyecto"
+              >
+                Elim.
               </Button>
             </div>
             <p className="text-xs text-muted-foreground">Guardado automatico activo (localStorage).</p>
@@ -126,12 +129,12 @@ export function PlaygroundEditorCard({
                 ))}
               </select>
             </label>
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-              <Button type="button" variant="secondary" onClick={onLoadSelectedExample}>
+            <div className="flex items-center gap-2">
+              <Button type="button" variant="secondary" className="flex-1" onClick={onLoadSelectedExample}>
                 Cargar ejemplo
               </Button>
-              <Button type="button" variant="outline" onClick={onFormatSource}>
-                Formatear codigo
+              <Button type="button" variant="outline" size="sm" onClick={onFormatSource} aria-label="Formatear codigo" title="Formatear codigo">
+                Form.
               </Button>
             </div>
           </div>
@@ -145,9 +148,11 @@ export function PlaygroundEditorCard({
           parserErrorMessage={parserError}
         />
 
-        <div className="space-y-1.5">
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Snippets rapidos</p>
-          <div className="-mx-1 overflow-x-auto px-1">
+        <details className="rounded-lg border border-border/70 bg-muted/15 p-3">
+          <summary className="cursor-pointer text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Snippets rapidos
+          </summary>
+          <div className="mt-3 -mx-1 overflow-x-auto px-1">
             <div className="flex min-w-max items-center gap-2">
               {quickSnippets.map((snippet) => (
                 <Button key={snippet.id} type="button" variant="outline" size="sm" onClick={() => onAppendSnippet(snippet.content)}>
@@ -156,7 +161,7 @@ export function PlaygroundEditorCard({
               ))}
             </div>
           </div>
-        </div>
+        </details>
 
         <div className="hidden flex-wrap items-center gap-3 md:flex">
           <Button type="button" onClick={onRunProgram} disabled={isRunDisabled}>
@@ -166,17 +171,13 @@ export function PlaygroundEditorCard({
         </div>
 
         {parserError ? (
-          <div className="space-y-2 rounded-lg border border-amber-400/40 bg-amber-400/10 px-3 py-2">
-            <p className="text-sm text-amber-700">{parserError}</p>
-            {parserHint ? <p className="text-xs text-amber-700/90">Sugerencia: {parserHint}</p> : null}
+          <div className="space-y-2 rounded-lg border px-3 py-2" style={{ borderColor: 'color-mix(in srgb, #f59e0b 40%, transparent)', backgroundColor: 'color-mix(in srgb, #f59e0b 12%, transparent)' }}>
+            <p className="text-sm text-foreground">{parserError}</p>
+            {parserHint ? <p className="text-xs text-muted-foreground">Sugerencia: {parserHint}</p> : null}
           </div>
         ) : null}
 
         {isAnalysisPending ? <p className="text-xs text-muted-foreground">Actualizando metricas y diagrama...</p> : null}
-
-        <div className="md:hidden">
-          <MobilePanelSelector active={mobilePanel} onChange={onMobilePanelChange} />
-        </div>
       </CardContent>
     </Card>
   )

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { lazy, Suspense, useState } from 'react'
 import { usePseintRuntime } from '@/features/runtime/hooks/usePseintRuntime'
 import { useFlowchartDiagramState } from '@/pages/playground/hooks/useFlowchartDiagramState'
 import { useMediaQuery } from '@/pages/playground/hooks/useMediaQuery'
@@ -7,23 +7,24 @@ import { usePlaygroundAnalysis } from '@/pages/playground/hooks/usePlaygroundAna
 import { usePlaygroundWorkspace } from '@/pages/playground/hooks/usePlaygroundWorkspace'
 import { usePracticeMode } from '@/pages/playground/hooks/usePracticeMode'
 import { isExpectedOutputMatch } from '@/pages/playground/lib/playgroundRuntimeUtils'
-import {
-  getMobilePanelSectionId,
-  getMobilePanelTabId,
-  type MobilePanelKey,
-} from '@/pages/playground/model/playgroundUiConfig'
-import { FlowchartCard } from '@/pages/playground/ui/components/FlowchartCard'
+import { getMobilePanelSectionId, type MobilePanelKey } from '@/pages/playground/model/playgroundUiConfig'
 import { FlowchartExpandedModal } from '@/pages/playground/ui/components/FlowchartExpandedModal'
 import { LearningFocusBanner } from '@/pages/playground/ui/components/LearningFocusBanner'
 import { MobileRunDock } from '@/pages/playground/ui/components/MobileRunDock'
-import { PlaygroundEditorCard } from '@/pages/playground/ui/components/PlaygroundEditorCard'
-import { PlaygroundLearningColumn } from '@/pages/playground/ui/components/PlaygroundLearningColumn'
+import { Card, CardContent } from '@/shared/ui/card'
+
+const PlaygroundEditorCard = lazy(() =>
+  import('@/pages/playground/ui/components/PlaygroundEditorCard').then((module) => ({ default: module.PlaygroundEditorCard })),
+)
+const PlaygroundLearningColumn = lazy(() =>
+  import('@/pages/playground/ui/components/PlaygroundLearningColumn').then((module) => ({ default: module.PlaygroundLearningColumn })),
+)
 
 export function PlaygroundPage() {
-  const [mobilePanel, setMobilePanel] = useState<MobilePanelKey>('inputs')
+  const [activePanel, setActivePanel] = useState<MobilePanelKey>('practice')
   const isDesktop = useMediaQuery('(min-width: 768px)')
 
-  useMobilePanelAutoScroll(mobilePanel)
+  useMobilePanelAutoScroll(activePanel)
 
   const {
     diagramSectionRef,
@@ -109,19 +110,19 @@ export function PlaygroundPage() {
       ) {
         markExerciseCompleted(selectedExercise.id)
       }
-      setMobilePanel('output')
+      setActivePanel('output')
     } catch {
-      setMobilePanel('output')
+      setActivePanel('output')
     }
   }
 
   const loadSelectedExampleAndShowInputs = () => {
     loadSelectedExample()
-    setMobilePanel('inputs')
+    setActivePanel('inputs')
   }
 
   const goToPractice = () => {
-    setMobilePanel('practice')
+    setActivePanel('practice')
     if (typeof document === 'undefined') {
       return
     }
@@ -134,15 +135,21 @@ export function PlaygroundPage() {
     target.scrollIntoView({ block: 'start', behavior: 'smooth' })
   }
 
+  const handlePanelChange = (panel: MobilePanelKey) => {
+    setActivePanel(panel)
+    if (panel === 'diagram') {
+      enableDiagramHydration()
+    }
+  }
+
   const runButtonText = status === 'running' ? 'Ejecutando...' : 'Ejecutar programa'
   const isRunDisabled = status === 'running' || Boolean(parserError)
-  const panelClass = (panel: MobilePanelKey) => (mobilePanel === panel ? 'block' : 'hidden md:block')
-  const shouldRenderInsights = isDesktop || mobilePanel === 'insights'
-  const shouldRenderAi = isDesktop || mobilePanel === 'ai'
-  const shouldRenderDiagram = isDesktop || mobilePanel === 'diagram'
+  const shouldRenderInsights = isDesktop || activePanel === 'insights'
+  const shouldRenderAi = isDesktop || activePanel === 'ai'
+  const shouldRenderDiagram = isDesktop || activePanel === 'diagram'
 
   return (
-    <div className="space-y-5 pb-[calc(env(safe-area-inset-bottom)+7rem)] md:pb-0">
+    <div className="space-y-4 pb-[calc(env(safe-area-inset-bottom)+7rem)] md:pb-0">
       <LearningFocusBanner
         selectedExercise={selectedExercise}
         selectedProgress={selectedProgress}
@@ -150,95 +157,87 @@ export function PlaygroundPage() {
         onGoToPractice={goToPractice}
       />
 
-      <div className="grid items-start gap-5 xl:grid-cols-[1.2fr_0.8fr]">
-        <PlaygroundEditorCard
-          projects={projects}
-          activeProjectId={activeProjectId}
-          selectedExampleId={selectedExampleId}
-          source={source}
-          parserErrorLine={parserErrorLine}
-          parserError={parserError}
-          parserHint={parserHint}
-          isAnalysisPending={isAnalysisPending}
-          mobilePanel={mobilePanel}
-          runButtonText={runButtonText}
-          isRunDisabled={isRunDisabled}
-          onSwitchProject={switchProject}
-          onCreateProject={createProject}
-          onRenameProject={renameProject}
-          onDeleteProject={deleteProject}
-          onSelectedExampleChange={setSelectedExampleId}
-          onLoadSelectedExample={loadSelectedExampleAndShowInputs}
-          onFormatSource={formatCurrentSource}
-          onSourceChange={handleSourceChange}
-          onAppendSnippet={appendSnippetAtEnd}
-          onRunProgram={() => void runProgram()}
-          onRestoreDefault={restoreDefaultProgram}
-          onMobilePanelChange={(panel) => {
-            setMobilePanel(panel)
-            if (panel === 'diagram') {
-              enableDiagramHydration()
-            }
-          }}
-        />
+      <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1.65fr)_minmax(0,1fr)]">
+        <div className="min-w-0">
+          <Suspense fallback={<Card><CardContent className="py-6 text-sm text-muted-foreground">Cargando editor...</CardContent></Card>}>
+            <PlaygroundEditorCard
+              projects={projects}
+              activeProjectId={activeProjectId}
+              selectedExampleId={selectedExampleId}
+              source={source}
+              parserErrorLine={parserErrorLine}
+              parserError={parserError}
+              parserHint={parserHint}
+              isAnalysisPending={isAnalysisPending}
+              runButtonText={runButtonText}
+              isRunDisabled={isRunDisabled}
+              onSwitchProject={switchProject}
+              onCreateProject={createProject}
+              onRenameProject={renameProject}
+              onDeleteProject={deleteProject}
+              onSelectedExampleChange={setSelectedExampleId}
+              onLoadSelectedExample={loadSelectedExampleAndShowInputs}
+              onFormatSource={formatCurrentSource}
+              onSourceChange={handleSourceChange}
+              onAppendSnippet={appendSnippetAtEnd}
+              onRunProgram={() => void runProgram()}
+              onRestoreDefault={restoreDefaultProgram}
+            />
+          </Suspense>
+        </div>
 
-        <PlaygroundLearningColumn
-          panelClass={panelClass}
-          getMobileTabId={getMobilePanelTabId}
-          selectedUnitId={selectedUnitId}
-          selectedUnitTitle={selectedUnit?.title ?? 'Sin unidad'}
-          selectedExercise={selectedExercise}
-          exercisesByUnit={exercisesByUnit}
-          selectedProgress={selectedProgress}
-          selectedExerciseAccess={selectedExerciseAccess}
-          stageFlow={stageFlow}
-          mastery={mastery}
-          onUnitChange={handleUnitChange}
-          onExerciseChange={setSelectedExerciseId}
-          onLoadExercise={loadSelectedExercise}
-          onLoadSolution={loadSelectedSolution}
-          onMarkLearned={() => {
-            if (selectedExercise) {
-              markExerciseStageCompleted(selectedExercise.id, 'aprende')
-            }
-          }}
-          onSaveReflection={(note) => {
-            if (selectedExercise) {
-              saveExerciseReflection(selectedExercise.id, note)
-            }
-          }}
-          onResetProgress={resetPractice}
-          inputFields={inputFields}
-          inputs={inputs}
-          onInputChange={(name, value) => {
-            setInputs((prev) => ({
-              ...prev,
-              [name]: value,
-            }))
-          }}
-          insights={insights}
-          parserError={parserError}
-          source={source}
-          shouldRenderInsights={shouldRenderInsights}
-          shouldRenderAi={shouldRenderAi}
-          status={status}
-          execution={result?.execution ?? null}
-          runtimeError={error}
-        />
-      </div>
-
-      <div ref={diagramSectionRef}>
-        <FlowchartCard
-          cardId={getMobilePanelSectionId('diagram')}
-          cardClassName={`min-w-0 ${panelClass('diagram')}`}
-          ariaLabelledBy={getMobilePanelTabId('diagram')}
-          flowchartPreview={flowchartPreview}
-          parserError={parserError}
-          shouldRenderDiagram={shouldRenderDiagram}
-          shouldHydrateDiagram={shouldHydrateDiagram}
-          onEnableHydration={enableDiagramHydration}
-          onExpand={openDiagram}
-        />
+        <Suspense fallback={<Card><CardContent className="py-6 text-sm text-muted-foreground">Cargando paneles...</CardContent></Card>}>
+          <PlaygroundLearningColumn
+            activePanel={activePanel}
+            onPanelChange={handlePanelChange}
+            isDesktop={isDesktop}
+            selectedUnitId={selectedUnitId}
+            selectedUnitTitle={selectedUnit?.title ?? 'Sin unidad'}
+            selectedExercise={selectedExercise}
+            exercisesByUnit={exercisesByUnit}
+            selectedProgress={selectedProgress}
+            selectedExerciseAccess={selectedExerciseAccess}
+            stageFlow={stageFlow}
+            mastery={mastery}
+            onUnitChange={handleUnitChange}
+            onExerciseChange={setSelectedExerciseId}
+            onLoadExercise={loadSelectedExercise}
+            onLoadSolution={loadSelectedSolution}
+            onMarkLearned={() => {
+              if (selectedExercise) {
+                markExerciseStageCompleted(selectedExercise.id, 'aprende')
+              }
+            }}
+            onSaveReflection={(note) => {
+              if (selectedExercise) {
+                saveExerciseReflection(selectedExercise.id, note)
+              }
+            }}
+            onResetProgress={resetPractice}
+            inputFields={inputFields}
+            inputs={inputs}
+            onInputChange={(name, value) => {
+              setInputs((prev) => ({
+                ...prev,
+                [name]: value,
+              }))
+            }}
+            insights={insights}
+            parserError={parserError}
+            source={source}
+            shouldRenderInsights={shouldRenderInsights}
+            shouldRenderAi={shouldRenderAi}
+            shouldRenderDiagram={shouldRenderDiagram}
+            status={status}
+            execution={result?.execution ?? null}
+            runtimeError={error}
+            flowchartPreview={flowchartPreview}
+            shouldHydrateDiagram={shouldHydrateDiagram}
+            onEnableDiagramHydration={enableDiagramHydration}
+            onExpandDiagram={openDiagram}
+            diagramSectionRef={diagramSectionRef}
+          />
+        </Suspense>
       </div>
 
       <FlowchartExpandedModal

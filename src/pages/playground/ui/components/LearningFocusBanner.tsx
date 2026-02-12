@@ -26,13 +26,13 @@ export function LearningFocusBanner({
   const statusMessage = parserError
     ? 'Corrige la sintaxis antes de avanzar.'
     : nextStageTitle
-      ? `Tu foco actual es la etapa "${nextStageTitle}".`
-      : 'Ruta completa. Puedes subir de dificultad.'
+      ? `Etapa activa: ${nextStageTitle}.`
+      : 'Ruta completada. Puedes subir de nivel.'
 
   return (
-    <section className="learning-focus-sheen relative overflow-hidden rounded-2xl border border-border/80 bg-card/90 px-4 py-4 shadow-[0_16px_32px_rgba(15,23,42,0.08)] md:px-5">
+    <section className="learning-focus-sheen relative overflow-hidden rounded-xl border border-border/80 bg-card/90 px-3 py-3 shadow-[0_12px_26px_rgba(15,23,42,0.08)] md:px-4">
       <div
-        className="pointer-events-none absolute inset-0 opacity-70"
+        className="pointer-events-none absolute inset-0 opacity-65"
         aria-hidden="true"
         style={{
           background:
@@ -42,18 +42,16 @@ export function LearningFocusBanner({
 
       <div className="relative z-10 flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0 space-y-1">
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">Modo Aprendizaje Activo</p>
-          <h2 className="truncate text-lg font-semibold tracking-tight text-foreground">{title}</h2>
-          <p className="text-sm text-muted-foreground" aria-live="polite">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-primary">Modo Aprendizaje Activo</p>
+          <h2 className="truncate text-base font-semibold tracking-tight text-foreground">{title}</h2>
+          <p className="text-xs text-muted-foreground" aria-live="polite">
             {statusMessage}
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
-          <Button type="button" variant="secondary" onClick={onGoToPractice}>
-            Continuar ruta
-          </Button>
-        </div>
+        <Button type="button" size="sm" variant="secondary" onClick={onGoToPractice}>
+          Continuar ruta
+        </Button>
       </div>
     </section>
   )
