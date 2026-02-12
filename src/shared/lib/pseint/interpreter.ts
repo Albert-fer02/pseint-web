@@ -6,6 +6,7 @@ import type {
   ProgramFunction,
   PseintVarType,
   RuntimeExecution,
+  RuntimeStepSnapshot,
   RuntimeScalar,
   RuntimeValue,
   Statement,
@@ -23,6 +24,8 @@ interface RuntimeMetrics {
   outputs: string[]
   stepsExecuted: number
   currentLine: string | null
+  trace: RuntimeStepSnapshot[]
+  traceTruncated: boolean
 }
 
 interface RuntimeContext {
@@ -36,6 +39,7 @@ interface RuntimeContext {
 }
 
 const MAX_LOOP_ITERATIONS = 100_000
+const MAX_TRACE_STEPS = 2_500
 
 export function executeProgram(ast: ProgramAst, rawInputs: Record<string, string>): RuntimeExecution {
   const declarations = new Map(ast.declarations.map((declaration) => [declaration.name, declaration]))
@@ -49,6 +53,8 @@ export function executeProgram(ast: ProgramAst, rawInputs: Record<string, string
     outputs: [],
     stepsExecuted: 0,
     currentLine: null,
+    trace: [],
+    traceTruncated: false,
   }
 
   const ctx: RuntimeContext = {
@@ -61,13 +67,17 @@ export function executeProgram(ast: ProgramAst, rawInputs: Record<string, string
     parent: null,
   }
 
+  recordTrace('start', ctx)
   executeStatements(ast.statements, ctx)
   flushPendingLine(metrics)
+  recordTrace('finish', ctx)
 
   return {
     outputs: metrics.outputs,
     variables: ctx.variables,
     stepsExecuted: metrics.stepsExecuted,
+    trace: metrics.trace,
+    traceTruncated: metrics.traceTruncated,
   }
 }
 
@@ -77,6 +87,7 @@ function executeStatements(statements: Statement[], ctx: RuntimeContext): void {
 
     if (statement.kind === 'read') {
       assignInput(statement.target, ctx)
+      recordTrace(statement.kind, ctx)
       continue
     }
 
@@ -89,12 +100,14 @@ function executeStatements(statements: Statement[], ctx: RuntimeContext): void {
         ctx.metrics.outputs.push(line)
         ctx.metrics.currentLine = null
       }
+      recordTrace(statement.kind, ctx)
       continue
     }
 
     if (statement.kind === 'assign') {
       const rawValue = evaluateExpression(statement.expression, ctx)
       assignTarget(statement.target, rawValue, ctx)
+      recordTrace(statement.kind, ctx)
       continue
     }
 
@@ -102,11 +115,31 @@ function executeStatements(statements: Statement[], ctx: RuntimeContext): void {
       const conditionValue = evaluateExpression(statement.condition, ctx)
       const shouldRunThen = toBoolean(ensureScalar(conditionValue, 'condicion de Si'))
       executeStatements(shouldRunThen ? statement.thenBranch : statement.elseBranch, ctx)
+      recordTrace(statement.kind, ctx)
       continue
     }
 
     if (statement.kind === 'for') {
       executeForLoop(statement, ctx)
+      recordTrace(statement.kind, ctx)
+      continue
+    }
+
+    if (statement.kind === 'while') {
+      executeWhileLoop(statement, ctx)
+      recordTrace(statement.kind, ctx)
+      continue
+    }
+
+    if (statement.kind === 'repeatUntil') {
+      executeRepeatUntilLoop(statement, ctx)
+      recordTrace(statement.kind, ctx)
+      continue
+    }
+
+    if (statement.kind === 'switch') {
+      executeSwitchStatement(statement, ctx)
+      recordTrace(statement.kind, ctx)
       continue
     }
 
@@ -150,6 +183,55 @@ function executeForLoop(statement: Extract<Statement, { kind: 'for' }>, ctx: Run
   }
 }
 
+function executeWhileLoop(statement: Extract<Statement, { kind: 'while' }>, ctx: RuntimeContext): void {
+  let iterations = 0
+
+  while (true) {
+    const conditionValue = evaluateExpression(statement.condition, ctx)
+    const shouldRun = toBoolean(ensureScalar(conditionValue, 'condicion de Mientras'))
+    if (!shouldRun) {
+      return
+    }
+
+    iterations += 1
+    ensureLoopLimit(iterations, 'Mientras')
+
+    executeStatements(statement.body, ctx)
+  }
+}
+
+function executeRepeatUntilLoop(statement: Extract<Statement, { kind: 'repeatUntil' }>, ctx: RuntimeContext): void {
+  let iterations = 0
+
+  while (true) {
+    iterations += 1
+    ensureLoopLimit(iterations, 'Repetir')
+
+    executeStatements(statement.body, ctx)
+    const conditionValue = evaluateExpression(statement.condition, ctx)
+    const shouldStop = toBoolean(ensureScalar(conditionValue, 'condicion de Hasta Que'))
+    if (shouldStop) {
+      return
+    }
+  }
+}
+
+function executeSwitchStatement(statement: Extract<Statement, { kind: 'switch' }>, ctx: RuntimeContext): void {
+  const evaluatedSwitchValue = ensureScalar(evaluateExpression(statement.expression, ctx), 'expresion de Segun')
+
+  for (const caseBranch of statement.cases) {
+    for (const valueExpression of caseBranch.values) {
+      const evaluatedCaseValue = ensureScalar(evaluateExpression(valueExpression, ctx), 'valor de caso en Segun')
+      if (valuesEqual(evaluatedSwitchValue, evaluatedCaseValue)) {
+        executeStatements(caseBranch.body, ctx)
+        return
+      }
+    }
+  }
+
+  executeStatements(statement.defaultBranch, ctx)
+}
+
 function evaluateExpression(expression: Expression, ctx: RuntimeContext): RuntimeValue {
   if (expression.kind === 'literal') {
     return expression.value
@@ -175,11 +257,20 @@ function evaluateExpression(expression: Expression, ctx: RuntimeContext): Runtim
     return getArrayElement(rawArray, indices, expression.name)
   }
 
+  if (expression.kind === 'unary') {
+    const operand = ensureScalar(evaluateExpression(expression.operand, ctx), 'operando de No')
+    return !toBoolean(operand)
+  }
+
   if (expression.kind === 'binary') {
     const left = ensureScalar(evaluateExpression(expression.left, ctx), 'operando izquierdo')
     const right = ensureScalar(evaluateExpression(expression.right, ctx), 'operando derecho')
 
     switch (expression.operator) {
+      case 'O':
+        return toBoolean(left) || toBoolean(right)
+      case 'Y':
+        return toBoolean(left) && toBoolean(right)
       case '+':
         if (typeof left === 'string' || typeof right === 'string') {
           return stringifyValue(left) + stringifyValue(right)
@@ -196,6 +287,13 @@ function evaluateExpression(expression: Expression, ctx: RuntimeContext): Runtim
         }
         return Number(left) / denominator
       }
+      case '%': {
+        const denominator = Number(right)
+        if (denominator === 0) {
+          throw new PseintRuntimeError('Division por cero.')
+        }
+        return Number(left) % denominator
+      }
       case '>=':
         return Number(left) >= Number(right)
       case '<=':
@@ -205,19 +303,35 @@ function evaluateExpression(expression: Expression, ctx: RuntimeContext): Runtim
       case '<':
         return Number(left) < Number(right)
       case '==':
-        return left === right
+        return valuesEqual(left, right)
       case '!=':
-        return left !== right
-      default: {
-        const neverOperator: never = expression.operator
-        throw new PseintRuntimeError(`Operador no soportado: ${neverOperator}`)
-      }
+        return !valuesEqual(left, right)
     }
+
+    throw new PseintRuntimeError('Operador no soportado.')
   }
 
   if (expression.kind === 'functionCall') {
-    if (expression.name === 'Subcadena') {
+    const normalizedName = expression.name.toLowerCase()
+
+    if (normalizedName === 'subcadena') {
       return evaluateSubcadena(expression.args, ctx)
+    }
+
+    if (normalizedName === 'longitud') {
+      return evaluateLongitud(expression.args, ctx)
+    }
+
+    if (normalizedName === 'mayusculas') {
+      return evaluateMayusculas(expression.args, ctx)
+    }
+
+    if (normalizedName === 'minusculas') {
+      return evaluateMinusculas(expression.args, ctx)
+    }
+
+    if (normalizedName === 'concatenar') {
+      return evaluateConcatenar(expression.args, ctx)
     }
 
     const userFunction = ctx.functions.get(expression.name)
@@ -255,6 +369,42 @@ function evaluateSubcadena(args: Expression[], ctx: RuntimeContext): RuntimeValu
   }
 
   return text.slice(start - 1, end)
+}
+
+function evaluateLongitud(args: Expression[], ctx: RuntimeContext): RuntimeValue {
+  if (args.length !== 1) {
+    throw new PseintRuntimeError('Longitud requiere exactamente 1 argumento.')
+  }
+
+  const rawValue = ensureScalar(evaluateExpression(args[0], ctx), 'argumento de Longitud')
+  return stringifyValue(rawValue).length
+}
+
+function evaluateMayusculas(args: Expression[], ctx: RuntimeContext): RuntimeValue {
+  if (args.length !== 1) {
+    throw new PseintRuntimeError('Mayusculas requiere exactamente 1 argumento.')
+  }
+
+  const rawValue = ensureScalar(evaluateExpression(args[0], ctx), 'argumento de Mayusculas')
+  return stringifyValue(rawValue).toUpperCase()
+}
+
+function evaluateMinusculas(args: Expression[], ctx: RuntimeContext): RuntimeValue {
+  if (args.length !== 1) {
+    throw new PseintRuntimeError('Minusculas requiere exactamente 1 argumento.')
+  }
+
+  const rawValue = ensureScalar(evaluateExpression(args[0], ctx), 'argumento de Minusculas')
+  return stringifyValue(rawValue).toLowerCase()
+}
+
+function evaluateConcatenar(args: Expression[], ctx: RuntimeContext): RuntimeValue {
+  if (args.length < 2) {
+    throw new PseintRuntimeError('Concatenar requiere al menos 2 argumentos.')
+  }
+
+  const values = args.map((arg) => ensureScalar(evaluateExpression(arg, ctx), 'argumento de Concatenar'))
+  return values.map((value) => stringifyValue(value)).join('')
 }
 
 function executeUserFunction(programFunction: ProgramFunction, args: RuntimeValue[], parentCtx: RuntimeContext): RuntimeValue {
@@ -625,6 +775,12 @@ function ensureNumericType(type: PseintVarType, variableName: string): void {
   }
 }
 
+function ensureLoopLimit(iterations: number, loopName: string): void {
+  if (iterations > MAX_LOOP_ITERATIONS) {
+    throw new PseintRuntimeError(`Se supero el limite de iteraciones del ciclo ${loopName}.`)
+  }
+}
+
 function ensureScalar(value: RuntimeValue, context: string): RuntimeScalar {
   if (Array.isArray(value)) {
     throw new PseintRuntimeError(`Se esperaba un valor escalar en ${context}.`)
@@ -665,6 +821,22 @@ function toBoolean(value: RuntimeScalar): boolean {
   return normalized !== '' && normalized !== 'false' && normalized !== 'falso' && normalized !== '0'
 }
 
+function valuesEqual(left: RuntimeScalar, right: RuntimeScalar): boolean {
+  if (typeof left === 'boolean' || typeof right === 'boolean') {
+    return toBoolean(left) === toBoolean(right)
+  }
+
+  if (typeof left === 'number' || typeof right === 'number') {
+    const leftNumber = Number(left)
+    const rightNumber = Number(right)
+    if (Number.isFinite(leftNumber) && Number.isFinite(rightNumber)) {
+      return leftNumber === rightNumber
+    }
+  }
+
+  return stringifyValue(left) === stringifyValue(right)
+}
+
 function stringifyValue(value: RuntimeValue): string {
   if (Array.isArray(value)) {
     return `[${value.map((item) => stringifyValue(item)).join(', ')}]`
@@ -682,6 +854,42 @@ function cloneRuntimeValue(value: RuntimeValue): RuntimeValue {
   }
 
   return value.map((item) => cloneRuntimeValue(item))
+}
+
+function cloneVariables(variables: Record<string, RuntimeValue>): Record<string, RuntimeValue> {
+  const clonedEntries = Object.entries(variables).map(([name, value]) => [name, cloneRuntimeValue(value)] as const)
+  return Object.fromEntries(clonedEntries)
+}
+
+function getGlobalContext(ctx: RuntimeContext): RuntimeContext {
+  let cursor: RuntimeContext = ctx
+  while (cursor.parent) {
+    cursor = cursor.parent
+  }
+  return cursor
+}
+
+function buildVisibleOutputs(metrics: RuntimeMetrics): string[] {
+  if (metrics.currentLine === null) {
+    return [...metrics.outputs]
+  }
+
+  return [...metrics.outputs, metrics.currentLine]
+}
+
+function recordTrace(marker: RuntimeStepSnapshot['marker'], ctx: RuntimeContext): void {
+  if (ctx.metrics.trace.length >= MAX_TRACE_STEPS) {
+    ctx.metrics.traceTruncated = true
+    return
+  }
+
+  const globalCtx = getGlobalContext(ctx)
+  ctx.metrics.trace.push({
+    marker,
+    stepNumber: ctx.metrics.stepsExecuted,
+    outputs: buildVisibleOutputs(ctx.metrics),
+    variables: cloneVariables(globalCtx.variables),
+  })
 }
 
 function flushPendingLine(metrics: RuntimeMetrics): void {

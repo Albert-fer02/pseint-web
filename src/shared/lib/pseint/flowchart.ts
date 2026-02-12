@@ -89,6 +89,94 @@ function buildStatementSequence(builder: MermaidBuilder, statements: Statement[]
       continue
     }
 
+    if (statement.kind === 'while') {
+      const conditionNode = createNode(builder, `Mientras ${expressionToString(statement.condition)}?`)
+      for (const incoming of currentIncoming) {
+        connect(builder, incoming, conditionNode)
+      }
+
+      const afterLoopNode = createNode(builder, 'Continuar')
+      connect(builder, conditionNode, afterLoopNode, 'No')
+
+      const bodyEntryNode = createNode(builder, 'Cuerpo Mientras')
+      connect(builder, conditionNode, bodyEntryNode, 'Si')
+
+      if (statement.body.length === 0) {
+        connect(builder, bodyEntryNode, conditionNode)
+      } else {
+        const bodyExits = buildStatementSequence(builder, statement.body, [bodyEntryNode])
+        for (const exit of bodyExits) {
+          connect(builder, exit, conditionNode)
+        }
+      }
+
+      currentIncoming = [afterLoopNode]
+      continue
+    }
+
+    if (statement.kind === 'repeatUntil') {
+      const repeatNode = createNode(builder, 'Repetir')
+      for (const incoming of currentIncoming) {
+        connect(builder, incoming, repeatNode)
+      }
+
+      let bodyExits: string[] = [repeatNode]
+      if (statement.body.length > 0) {
+        bodyExits = buildStatementSequence(builder, statement.body, [repeatNode])
+      }
+
+      const untilNode = createNode(builder, `Hasta Que ${expressionToString(statement.condition)}?`)
+      for (const exit of bodyExits) {
+        connect(builder, exit, untilNode)
+      }
+
+      connect(builder, untilNode, repeatNode, 'No')
+      const afterLoopNode = createNode(builder, 'Continuar')
+      connect(builder, untilNode, afterLoopNode, 'Si')
+      currentIncoming = [afterLoopNode]
+      continue
+    }
+
+    if (statement.kind === 'switch') {
+      const switchNode = createNode(builder, `Segun ${expressionToString(statement.expression)}`)
+      for (const incoming of currentIncoming) {
+        connect(builder, incoming, switchNode)
+      }
+
+      const mergeNode = createNode(builder, 'Continuar')
+
+      for (const caseBranch of statement.cases) {
+        const caseNode = createNode(
+          builder,
+          `Caso ${caseBranch.values.map((value) => expressionToString(value)).join(', ')}`,
+        )
+        connect(builder, switchNode, caseNode)
+
+        if (caseBranch.body.length === 0) {
+          connect(builder, caseNode, mergeNode)
+        } else {
+          const caseExits = buildStatementSequence(builder, caseBranch.body, [caseNode])
+          for (const exit of caseExits) {
+            connect(builder, exit, mergeNode)
+          }
+        }
+      }
+
+      if (statement.defaultBranch.length === 0) {
+        connect(builder, switchNode, mergeNode, 'Otro')
+      } else {
+        const defaultNode = createNode(builder, 'De Otro Modo')
+        connect(builder, switchNode, defaultNode, 'Otro')
+        const defaultExits = buildStatementSequence(builder, statement.defaultBranch, [defaultNode])
+        for (const exit of defaultExits) {
+          connect(builder, exit, mergeNode)
+        }
+      }
+
+      currentIncoming = [mergeNode]
+      continue
+    }
+
     const nodeLabel = statementToLabel(statement)
     const statementNode = createNode(builder, nodeLabel)
     for (const incoming of currentIncoming) {
@@ -100,7 +188,12 @@ function buildStatementSequence(builder: MermaidBuilder, statements: Statement[]
   return currentIncoming
 }
 
-function statementToLabel(statement: Exclude<Statement, { kind: 'if' } | { kind: 'for' }>): string {
+function statementToLabel(
+  statement: Exclude<
+    Statement,
+    { kind: 'if' } | { kind: 'for' } | { kind: 'while' } | { kind: 'repeatUntil' } | { kind: 'switch' }
+  >,
+): string {
   if (statement.kind === 'read') {
     return `Leer ${targetToString(statement.target)}`
   }
@@ -122,6 +215,9 @@ function expressionToString(expression: Expression): string {
   }
   if (expression.kind === 'arrayElement') {
     return `${expression.name}[${expression.indices.map((index) => expressionToString(index)).join(', ')}]`
+  }
+  if (expression.kind === 'unary') {
+    return `${expression.operator} ${expressionToString(expression.operand)}`
   }
   if (expression.kind === 'binary') {
     return `${expressionToString(expression.left)} ${expression.operator} ${expressionToString(expression.right)}`

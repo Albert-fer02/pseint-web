@@ -58,6 +58,41 @@ Funcion suma <- sumarMatriz(mat[ , ], tam)
     suma <- acum;
 FinFuncion`
 
+const controlFlowExtendedSource = `Algoritmo ControlFlujoExtendido
+    Definir numero, acumulado, contador Como Entero;
+    Definir etiqueta Como Cadena;
+    Definir esPositivo Como Logico;
+
+    Leer numero;
+    acumulado <- 0;
+    contador <- 1;
+
+    Mientras contador <= numero Hacer
+        acumulado <- acumulado + contador;
+        contador <- contador + 1;
+    FinMientras
+
+    Segun numero Hacer
+        1:
+            etiqueta <- "uno";
+        2, 3:
+            etiqueta <- "dos o tres";
+        De Otro Modo:
+            etiqueta <- "otro";
+    FinSegun
+
+    esPositivo <- No (numero <= 0) Y Verdadero;
+
+    Repetir
+        numero <- numero - 1;
+    Hasta Que numero == 0
+
+    Escribir etiqueta;
+    Escribir acumulado;
+    Escribir esPositivo;
+    Escribir Longitud(Mayusculas(Concatenar("ab", "c")));
+FinAlgoritmo`
+
 describe('parseProgram', () => {
   it('parses declarations and statements', () => {
     const ast = parseProgram(source)
@@ -148,6 +183,24 @@ FinAlgoritmo`
     expect(ast.functions).toHaveLength(1)
     expect(ast.functions[0]?.name).toBe('sumarMatriz')
   })
+
+  it('supports Mientras, Repetir, Segun and logical operators', () => {
+    const ast = parseProgram(controlFlowExtendedSource)
+
+    expect(ast.statements.some((statement) => statement.kind === 'while')).toBe(true)
+    expect(ast.statements.some((statement) => statement.kind === 'repeatUntil')).toBe(true)
+    expect(ast.statements.some((statement) => statement.kind === 'switch')).toBe(true)
+  })
+
+  it('shows a clearer error when executable code is after FinAlgoritmo', () => {
+    const misplacedStatementSource = `Algoritmo DemoFueraDeBloque
+    Definir condicion Como Logico;
+FinAlgoritmo
+Mientras condicion Hacer
+FinMientras`
+
+    expect(() => parseProgram(misplacedStatementSource)).toThrowError(/fuera de Algoritmo o Funcion/i)
+  })
 })
 
 describe('executeProgram', () => {
@@ -162,6 +215,21 @@ describe('executeProgram', () => {
     expect(result.outputs[0]).toBe('Hola, Ana!')
     expect(result.outputs[1]).toContain('mayor')
     expect(result.variables.inicial).toBe('A')
+  })
+
+  it('builds an execution trace for step-by-step mode', () => {
+    const ast = parseProgram(source)
+    const result = executeProgram(ast, {
+      nombre: 'Ana',
+      edad: '20',
+      altura: '1.68',
+    })
+
+    expect(result.trace.length).toBeGreaterThan(2)
+    expect(result.trace[0]?.marker).toBe('start')
+    expect(result.trace[result.trace.length - 1]?.marker).toBe('finish')
+    expect(result.trace[result.trace.length - 1]?.variables).toEqual(result.variables)
+    expect(result.traceTruncated).toBe(false)
   })
 
   it('throws when an expected input is missing', () => {
@@ -246,5 +314,14 @@ FinAlgoritmo`
       'Suma total de la matriz: 36',
     ])
     expect(result.variables.total).toBe(36)
+  })
+
+  it('executes Mientras, Repetir, Segun and string built-ins', () => {
+    const ast = parseProgram(controlFlowExtendedSource)
+    const result = executeProgram(ast, { numero: '4' })
+
+    expect(result.outputs).toEqual(['otro', '10', 'Verdadero', '3'])
+    expect(result.variables.acumulado).toBe(10)
+    expect(result.variables.numero).toBe(0)
   })
 })

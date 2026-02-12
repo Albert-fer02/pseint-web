@@ -14,17 +14,30 @@ const KEYWORDS = new Set([
   'entonces',
   'sino',
   'finsi',
+  'segun',
+  'finsegun',
+  'de',
+  'otro',
+  'modo',
   'mientras',
   'finmientras',
   'para',
+  'con',
+  'paso',
+  'hacer',
   'finpara',
   'repetir',
   'hasta',
   'que',
+  'sin',
+  'saltar',
+  'no',
+  'y',
+  'o',
 ])
 
 const TYPES = new Set(['cadena', 'entero', 'real', 'logico', 'caracter'])
-const FUNCTIONS = new Set(['subcadena', 'longitud', 'mayusculas', 'minusculas'])
+const FUNCTIONS = new Set(['subcadena', 'longitud', 'mayusculas', 'minusculas', 'concatenar'])
 
 const completionItems: Completion[] = [
   ...Array.from(KEYWORDS).map((keyword) => ({
@@ -114,7 +127,7 @@ const parser: StreamParser<null> = {
       return 'number'
     }
 
-    if (stream.match(/^(<-|>=|<=|==|!=|\+|-|\*|\/|>|<)/)) {
+    if (stream.match(/^(<-|>=|<=|==|!=|\+|-|\*|\/|%|>|<)/)) {
       return 'operator'
     }
 

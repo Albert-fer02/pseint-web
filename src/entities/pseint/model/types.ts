@@ -15,10 +15,17 @@ export type Expression =
   | { kind: 'literal'; value: string | number | boolean }
   | { kind: 'identifier'; name: string }
   | { kind: 'arrayElement'; name: string; indices: Expression[] }
+  | { kind: 'unary'; operator: UnaryOperator; operand: Expression }
   | { kind: 'binary'; operator: BinaryOperator; left: Expression; right: Expression }
   | { kind: 'functionCall'; name: string; args: Expression[] }
 
-export type BinaryOperator = '>=' | '<=' | '>' | '<' | '==' | '!=' | '+' | '-' | '*' | '/'
+export type UnaryOperator = 'NO'
+export type BinaryOperator = 'O' | 'Y' | '>=' | '<=' | '>' | '<' | '==' | '!=' | '+' | '-' | '*' | '/' | '%'
+
+export interface SegunCase {
+  values: Expression[]
+  body: Statement[]
+}
 
 export type Statement =
   | { kind: 'read'; target: TargetRef }
@@ -26,6 +33,9 @@ export type Statement =
   | { kind: 'assign'; target: TargetRef; expression: Expression }
   | { kind: 'if'; condition: Expression; thenBranch: Statement[]; elseBranch: Statement[] }
   | { kind: 'for'; iterator: string; start: Expression; end: Expression; step: Expression; body: Statement[] }
+  | { kind: 'while'; condition: Expression; body: Statement[] }
+  | { kind: 'repeatUntil'; body: Statement[]; condition: Expression }
+  | { kind: 'switch'; expression: Expression; cases: SegunCase[]; defaultBranch: Statement[] }
 
 export interface FunctionParameter {
   name: string
@@ -51,10 +61,21 @@ export interface ProgramAst {
 export type RuntimeScalar = string | number | boolean
 export type RuntimeValue = RuntimeScalar | RuntimeValue[]
 
+export type RuntimeTraceMarker = 'start' | 'finish' | Statement['kind']
+
+export interface RuntimeStepSnapshot {
+  stepNumber: number
+  marker: RuntimeTraceMarker
+  outputs: string[]
+  variables: Record<string, RuntimeValue>
+}
+
 export interface RuntimeExecution {
   outputs: string[]
   variables: Record<string, RuntimeValue>
   stepsExecuted: number
+  trace: RuntimeStepSnapshot[]
+  traceTruncated: boolean
 }
 
 export interface RuntimeInputField {

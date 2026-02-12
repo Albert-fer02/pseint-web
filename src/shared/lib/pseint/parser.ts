@@ -6,6 +6,7 @@ import type {
   ProgramDeclaration,
   ProgramFunction,
   PseintVarType,
+  SegunCase,
   Statement,
   TargetRef,
 } from '@/entities/pseint/model/types'
@@ -17,13 +18,21 @@ const IF_REGEX = /^Si\s+(.+)\s+Entonces\s*$/i
 const ELSE_IF_REGEX = /^Sino\s+Si\s+(.+)\s+Entonces\s*$/i
 const FOR_REGEX =
   /^Para\s+([A-Za-z_][A-Za-z0-9_]*)\s*<-\s*(.+?)\s+Hasta\s+(.+?)(?:\s+Con\s+Paso\s+(.+?))?\s+Hacer\s*;?$/i
+const WHILE_REGEX = /^Mientras\s+(.+)\s+Hacer\s*;?$/i
+const REPEAT_REGEX = /^Repetir\s*;?$/i
+const UNTIL_REGEX = /^Hasta\s+Que\s+(.+)\s*;?$/i
+const SWITCH_REGEX = /^Segun\s+(.+)\s+Hacer\s*;?$/i
+const SWITCH_DEFAULT_REGEX = /^De\s+Otro\s+Modo\s*:?\s*$/i
+const SWITCH_CASE_REGEX = /^(.+)\s*:\s*$/
 const FUNCTION_HEADER_REGEX =
   /^Funcion\s+([A-Za-z_][A-Za-z0-9_]*)\s*<-\s*([A-Za-z_][A-Za-z0-9_]*)\s*\((.*)\)\s*$/i
 
 const OPERATOR_LEVELS: BinaryOperator[][] = [
+  ['O'],
+  ['Y'],
   ['>=', '<=', '==', '!=', '>', '<'],
   ['+', '-'],
-  ['*', '/'],
+  ['*', '/', '%'],
 ]
 
 interface SourceLine {
@@ -99,7 +108,7 @@ export function parseProgram(source: string): ProgramAst {
     }
 
     if (!current.text.startsWith('Funcion ')) {
-      throw new PseintParseError(`Sentencia no soportada fuera de Algoritmo: "${current.text}"`, current.line)
+      throw createOutOfScopeStatementError(current)
     }
 
     const programFunction = parseFunction(state)
@@ -117,6 +126,25 @@ export function parseProgram(source: string): ProgramAst {
     statements,
     functions,
   }
+}
+
+function createOutOfScopeStatementError(line: SourceLine): PseintParseError {
+  if (isLikelyExecutableStatement(line.text)) {
+    return new PseintParseError(
+      `La sentencia esta fuera de Algoritmo o Funcion: "${line.text}". Colocala antes de "FinAlgoritmo" o dentro de una "Funcion".`,
+      line.line,
+    )
+  }
+
+  return new PseintParseError(`Sentencia no soportada fuera de Algoritmo: "${line.text}"`, line.line)
+}
+
+function isLikelyExecutableStatement(text: string): boolean {
+  if (ASSIGNMENT_REGEX.test(text)) {
+    return true
+  }
+
+  return /^(Definir|Leer|Escribir|Si|Sino|Para|Mientras|Repetir|Segun)\b/i.test(text)
 }
 
 function parseFunction(state: ParserState): ProgramFunction {
@@ -310,6 +338,106 @@ function parseStatements(
       continue
     }
 
+    if (current.text.startsWith('Mientras ')) {
+      const whileMatch = current.text.match(WHILE_REGEX)
+      if (!whileMatch) {
+        throw new PseintParseError('Sintaxis invalida en Mientras.', current.line)
+      }
+
+      state.index += 1
+      const body = parseStatements(state, ['FinMientras'], declarations, declaredNames)
+
+      const endWhile = state.lines[state.index]
+      if (!endWhile || endWhile.text !== 'FinMientras') {
+        throw new PseintParseError('Falta "FinMientras" en bloque Mientras.', current.line)
+      }
+
+      statements.push({
+        kind: 'while',
+        condition: parseExpression(whileMatch[1], current.line),
+        body,
+      })
+      state.index += 1
+      continue
+    }
+
+    if (REPEAT_REGEX.test(current.text)) {
+      state.index += 1
+      const body = parseStatements(state, ['HastaQue'], declarations, declaredNames)
+
+      const untilLine = state.lines[state.index]
+      if (!untilLine) {
+        throw new PseintParseError('Falta "Hasta Que" en bloque Repetir.', current.line)
+      }
+
+      const untilMatch = untilLine.text.match(UNTIL_REGEX)
+      if (!untilMatch) {
+        throw new PseintParseError('Sintaxis invalida en "Hasta Que".', untilLine.line)
+      }
+
+      statements.push({
+        kind: 'repeatUntil',
+        body,
+        condition: parseExpression(untilMatch[1], untilLine.line),
+      })
+      state.index += 1
+      continue
+    }
+
+    if (current.text.startsWith('Segun ')) {
+      const switchMatch = current.text.match(SWITCH_REGEX)
+      if (!switchMatch) {
+        throw new PseintParseError('Sintaxis invalida en Segun.', current.line)
+      }
+
+      state.index += 1
+      const cases: SegunCase[] = []
+      let defaultBranch: Statement[] = []
+
+      while (state.index < state.lines.length) {
+        const branchLine = state.lines[state.index]
+        if (!branchLine) {
+          break
+        }
+
+        if (branchLine.text === 'FinSegun') {
+          break
+        }
+
+        if (SWITCH_DEFAULT_REGEX.test(branchLine.text)) {
+          state.index += 1
+          defaultBranch = parseStatements(state, ['FinSegun'], declarations, declaredNames)
+          break
+        }
+
+        if (!SWITCH_CASE_REGEX.test(branchLine.text)) {
+          throw new PseintParseError('Caso invalido en bloque Segun.', branchLine.line)
+        }
+
+        const caseValues = parseSegunCaseValues(branchLine.text, branchLine.line)
+        state.index += 1
+        const body = parseStatements(state, ['FinSegun', 'CasoSegun', 'DeOtroModo'], declarations, declaredNames)
+        cases.push({
+          values: caseValues,
+          body,
+        })
+      }
+
+      const endSwitch = state.lines[state.index]
+      if (!endSwitch || endSwitch.text !== 'FinSegun') {
+        throw new PseintParseError('Falta "FinSegun" en bloque Segun.', current.line)
+      }
+
+      statements.push({
+        kind: 'switch',
+        expression: parseExpression(switchMatch[1], current.line),
+        cases,
+        defaultBranch,
+      })
+      state.index += 1
+      continue
+    }
+
     const assignmentMatch = current.text.match(ASSIGNMENT_REGEX)
     if (assignmentMatch) {
       statements.push({
@@ -340,6 +468,15 @@ function parseExpression(raw: string, line: number): Expression {
 
   if (/^(Verdadero|Falso)$/i.test(value)) {
     return { kind: 'literal', value: /^Verdadero$/i.test(value) }
+  }
+
+  const notMatch = value.match(/^No\s+(.+)$/i)
+  if (notMatch) {
+    return {
+      kind: 'unary',
+      operator: 'NO',
+      operand: parseExpression(notMatch[1], line),
+    }
   }
 
   for (const operators of OPERATOR_LEVELS) {
@@ -450,6 +587,20 @@ function parseElseIfChain(
   }
 }
 
+function parseSegunCaseValues(rawCaseLine: string, line: number): Expression[] {
+  const match = rawCaseLine.match(SWITCH_CASE_REGEX)
+  if (!match) {
+    throw new PseintParseError(`Caso invalido en Segun: "${rawCaseLine}"`, line)
+  }
+
+  const rawValues = splitTopLevel(match[1], ',')
+  if (!rawValues.length) {
+    throw new PseintParseError('Un caso de Segun debe tener al menos un valor.', line)
+  }
+
+  return rawValues.map((rawValue) => parseExpression(rawValue, line))
+}
+
 function findOperatorRightToLeft(
   value: string,
   operators: BinaryOperator[],
@@ -494,13 +645,31 @@ function findOperatorRightToLeft(
       if (startIndex < 0) {
         continue
       }
-      if (value.slice(startIndex, i + 1) === operator) {
-        return { index: startIndex, operator }
+
+      const token = value.slice(startIndex, i + 1)
+      const normalizedToken = token.toUpperCase()
+      const normalizedOperator = operator.toUpperCase()
+      if (normalizedToken !== normalizedOperator) {
+        continue
       }
+
+      if ((operator === 'Y' || operator === 'O')) {
+        const before = startIndex > 0 ? value[startIndex - 1] : ''
+        const after = i + 1 < value.length ? value[i + 1] : ''
+        if (isWordChar(before) || isWordChar(after)) {
+          continue
+        }
+      }
+
+      return { index: startIndex, operator }
     }
   }
 
   return null
+}
+
+function isWordChar(value: string): boolean {
+  return /^[A-Za-z0-9_]$/.test(value)
 }
 
 function splitTopLevel(input: string, delimiter: ',' | ';'): string[] {
@@ -643,6 +812,18 @@ function matchesStopToken(currentText: string, stopTokens: string[]): boolean {
     }
 
     if (stopToken === 'SinoSi' && ELSE_IF_REGEX.test(currentText)) {
+      return true
+    }
+
+    if (stopToken === 'HastaQue' && UNTIL_REGEX.test(currentText)) {
+      return true
+    }
+
+    if (stopToken === 'CasoSegun' && SWITCH_CASE_REGEX.test(currentText) && !SWITCH_DEFAULT_REGEX.test(currentText)) {
+      return true
+    }
+
+    if (stopToken === 'DeOtroModo' && SWITCH_DEFAULT_REGEX.test(currentText)) {
       return true
     }
   }

@@ -107,10 +107,22 @@ function collectStatementStats(statements: Statement[], depth = 1): StatementSta
       continue
     }
 
-    result.loops += 1
+    if (statement.kind === 'for' || statement.kind === 'while' || statement.kind === 'repeatUntil') {
+      result.loops += 1
+      result.maxNesting = Math.max(result.maxNesting, depth)
+      const bodyStats = collectStatementStats(statement.body, depth + 1)
+      mergeStats(result, bodyStats)
+      continue
+    }
+
+    result.conditionals += 1
     result.maxNesting = Math.max(result.maxNesting, depth)
-    const bodyStats = collectStatementStats(statement.body, depth + 1)
-    mergeStats(result, bodyStats)
+    for (const caseBranch of statement.cases) {
+      const caseStats = collectStatementStats(caseBranch.body, depth + 1)
+      mergeStats(result, caseStats)
+    }
+    const defaultStats = collectStatementStats(statement.defaultBranch, depth + 1)
+    mergeStats(result, defaultStats)
   }
 
   return result

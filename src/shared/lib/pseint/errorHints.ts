@@ -5,6 +5,10 @@ export function getPseintErrorHint(rawMessage: string): string | null {
     return 'Revisa la linea indicada y verifica la sintaxis exacta de la sentencia.'
   }
 
+  if (/fuera de Algoritmo o Funcion/i.test(message)) {
+    return 'Mueve esa sentencia antes de FinAlgoritmo o colócala dentro de una Funcion.'
+  }
+
   if (/Falta "FinAlgoritmo"/i.test(message)) {
     return 'Asegurate de cerrar el programa con FinAlgoritmo al final del archivo.'
   }
@@ -15,6 +19,18 @@ export function getPseintErrorHint(rawMessage: string): string | null {
 
   if (/Falta "FinPara"/i.test(message)) {
     return 'Cada ciclo Para debe cerrarse con FinPara.'
+  }
+
+  if (/Falta "FinMientras"/i.test(message)) {
+    return 'Cada ciclo Mientras debe cerrarse con FinMientras.'
+  }
+
+  if (/Falta "Hasta Que"/i.test(message)) {
+    return 'Cada bloque Repetir debe cerrarse con Hasta Que <condicion>.'
+  }
+
+  if (/Falta "FinSegun"/i.test(message)) {
+    return 'Cada bloque Segun debe cerrarse con FinSegun.'
   }
 
   if (/Falta "FinFuncion"/i.test(message)) {

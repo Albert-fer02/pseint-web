@@ -39,6 +39,24 @@ function collectReadStatements(
 
     if (statement.kind === 'for') {
       collectReadStatements(statement.body, seen, declarationMap, fields)
+      continue
+    }
+
+    if (statement.kind === 'while') {
+      collectReadStatements(statement.body, seen, declarationMap, fields)
+      continue
+    }
+
+    if (statement.kind === 'repeatUntil') {
+      collectReadStatements(statement.body, seen, declarationMap, fields)
+      continue
+    }
+
+    if (statement.kind === 'switch') {
+      for (const caseBranch of statement.cases) {
+        collectReadStatements(caseBranch.body, seen, declarationMap, fields)
+      }
+      collectReadStatements(statement.defaultBranch, seen, declarationMap, fields)
     }
   }
 }
@@ -62,6 +80,10 @@ function expressionToCompactString(expression: Expression): string {
 
   if (expression.kind === 'arrayElement') {
     return `${expression.name}[${expression.indices.map((index) => expressionToCompactString(index)).join(',')}]`
+  }
+
+  if (expression.kind === 'unary') {
+    return `${expression.operator} ${expressionToCompactString(expression.operand)}`
   }
 
   if (expression.kind === 'binary') {
