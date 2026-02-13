@@ -4,10 +4,10 @@ import type {
   ProgramDeclaration,
   RuntimeValue,
   TargetRef,
-} from '@/entities/pseint/model/types'
-import { ensureScalar, toArrayIndex } from '@/shared/lib/pseint/runtimePrimitives'
-import { PseintRuntimeError } from '@/shared/lib/pseint/runtimeError'
-import type { RuntimeContext, RuntimeMetrics } from '@/shared/lib/pseint/runtimeTypes'
+} from '../../../entities/pseint/model/types'
+import { ensureScalar, toArrayIndex } from './runtimePrimitives'
+import { PseintRuntimeError } from './runtimeError'
+import type { RuntimeContext, RuntimeMetrics } from './runtimeTypes'
 
 export function evaluateConstants(
   constants: ProgramConstant[],

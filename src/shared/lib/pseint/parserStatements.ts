@@ -3,7 +3,7 @@ import type {
   ProgramDeclaration,
   SegunCase,
   Statement,
-} from '@/entities/pseint/model/types'
+} from '../../../entities/pseint/model/types'
 import {
   ASSIGNMENT_REGEX,
   CALL_REGEX,
@@ -21,18 +21,18 @@ import {
   SWITCH_CASE_REGEX,
   UNTIL_REGEX,
   WHILE_REGEX,
-} from '@/shared/lib/pseint/parserCore'
-import type { ParserState } from '@/shared/lib/pseint/parserCore'
+} from './parserCore'
+import type { ParserState } from './parserCore'
 import {
   appendConstant,
   appendDeclarations,
-} from '@/shared/lib/pseint/parserDeclarations'
+} from './parserDeclarations'
 import {
   parseExpression,
   parseSegunCaseValues,
   parseTargetRef,
-} from '@/shared/lib/pseint/parserExpressions'
-import { splitTopLevel } from '@/shared/lib/pseint/parserUtils'
+} from './parserExpressions'
+import { splitTopLevel } from './parserUtils'
 
 export function parseStatements(
   state: ParserState,

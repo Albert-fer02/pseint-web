@@ -2,13 +2,13 @@ import type {
   FunctionParameter,
   ProgramConstant,
   ProgramDeclaration,
-} from '@/entities/pseint/model/types'
+} from '../../../entities/pseint/model/types'
 import {
   normalizeVarType,
   PseintParseError,
-} from '@/shared/lib/pseint/parserCore'
-import { parseExpression } from '@/shared/lib/pseint/parserExpressions'
-import { splitTopLevel } from '@/shared/lib/pseint/parserUtils'
+} from './parserCore'
+import { parseExpression } from './parserExpressions'
+import { splitTopLevel } from './parserUtils'
 
 export function parseFunctionParameters(rawParameters: string, line: number): FunctionParameter[] {
   const trimmed = rawParameters.trim()

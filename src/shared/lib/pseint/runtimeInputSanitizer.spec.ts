@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { sanitizeRuntimeInputs } from '@/shared/lib/pseint/runtimeInputSanitizer'
+import { sanitizeRuntimeInputs } from './runtimeInputSanitizer'
 
 describe('sanitizeRuntimeInputs', () => {
   it('keeps regular keys and values', () => {

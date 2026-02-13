@@ -46,7 +46,7 @@ const KEYWORDS = new Set([
 const TYPES = new Set(['cadena', 'entero', 'real', 'logico', 'caracter'])
 const FUNCTIONS = new Set(['subcadena', 'longitud', 'mayusculas', 'minusculas', 'concatenar'])
 
-const completionItems: Completion[] = [
+export const pseintCompletionItems: Completion[] = [
   ...Array.from(KEYWORDS).map((keyword) => ({
     label: keyword,
     type: 'keyword',
@@ -163,7 +163,7 @@ const parser: StreamParser<null> = {
 
 export const pseintLanguage = StreamLanguage.define(parser)
 export const pseintAutocompletion = autocompletion({
-  override: [completeFromList(completionItems)],
+  override: [completeFromList(pseintCompletionItems)],
   activateOnTyping: true,
   maxRenderedOptions: 14,
 })

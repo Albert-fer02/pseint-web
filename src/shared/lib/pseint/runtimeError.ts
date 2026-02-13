@@ -1,5 +1,5 @@
-import { getPseintErrorHint } from '@/shared/lib/pseint/errorHints'
-import { PseintParseError } from '@/shared/lib/pseint/parserCore'
+import { getPseintErrorHint } from './errorHints'
+import { PseintParseError } from './parserCore'
 
 export type PseintErrorCategory = 'syntax' | 'runtime' | 'type' | 'logic' | 'input' | 'system'
 export type PseintErrorSource = 'parser' | 'runtime' | 'system'

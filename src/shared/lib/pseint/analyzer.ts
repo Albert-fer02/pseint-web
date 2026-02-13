@@ -1,4 +1,4 @@
-import type { Expression, ProgramAst, RuntimeInputField, Statement, TargetRef } from '@/entities/pseint/model/types'
+import type { Expression, ProgramAst, RuntimeInputField, Statement, TargetRef } from '../../../entities/pseint/model/types'
 
 export function extractInputFields(ast: ProgramAst): RuntimeInputField[] {
   const declarationMap = new Map(ast.declarations.map((declaration) => [declaration.name, declaration.varType]))

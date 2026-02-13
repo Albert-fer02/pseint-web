@@ -1,16 +1,16 @@
-import type { Expression, TargetRef } from '@/entities/pseint/model/types'
+import type { Expression, TargetRef } from '../../../entities/pseint/model/types'
 import {
   OPERATOR_LEVELS,
   PseintParseError,
   SWITCH_CASE_REGEX,
-} from '@/shared/lib/pseint/parserCore'
+} from './parserCore'
 import {
   findOperatorRightToLeft,
   isQuoted,
   splitTopLevel,
   stripOuterParentheses,
   unquote,
-} from '@/shared/lib/pseint/parserUtils'
+} from './parserUtils'
 
 export function parseExpression(raw: string, line: number): Expression {
   const value = stripOuterParentheses(raw.trim())

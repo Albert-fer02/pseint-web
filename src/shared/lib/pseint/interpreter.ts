@@ -7,8 +7,8 @@ import type {
   RuntimeValue,
   Statement,
   TargetRef,
-} from '@/entities/pseint/model/types'
-import { PseintRuntimeError } from '@/shared/lib/pseint/runtimeError'
+} from '../../../entities/pseint/model/types'
+import { PseintRuntimeError } from './runtimeError'
 import {
   cloneVariables,
   coerceToType,
@@ -20,7 +20,7 @@ import {
   toBoolean,
   toFiniteNumber,
   valuesEqual,
-} from '@/shared/lib/pseint/runtimePrimitives'
+} from './runtimePrimitives'
 import {
   buildVisibleOutputs,
   evaluateArrayIndices,
@@ -32,10 +32,10 @@ import {
   hasConstantWithScope,
   setArrayElement,
   targetToInputKey,
-} from '@/shared/lib/pseint/runtimeState'
-import { executeCallableStatement, executeUserFunction } from '@/shared/lib/pseint/runtimeSubprograms'
-import { sanitizeRuntimeInputs } from '@/shared/lib/pseint/runtimeInputSanitizer'
-import type { RuntimeContext, RuntimeMetrics } from '@/shared/lib/pseint/runtimeTypes'
+} from './runtimeState'
+import { executeCallableStatement, executeUserFunction } from './runtimeSubprograms'
+import { sanitizeRuntimeInputs } from './runtimeInputSanitizer'
+import type { RuntimeContext, RuntimeMetrics } from './runtimeTypes'
 
 const MAX_TRACE_STEPS = 2_500
 

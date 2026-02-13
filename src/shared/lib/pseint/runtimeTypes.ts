@@ -6,7 +6,7 @@ import type {
   RuntimeScalar,
   RuntimeStepSnapshot,
   RuntimeValue,
-} from '@/entities/pseint/model/types'
+} from '../../../entities/pseint/model/types'
 
 export interface RuntimeMetrics {
   outputs: string[]

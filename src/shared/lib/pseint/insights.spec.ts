@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { extractInputFields } from '@/shared/lib/pseint/analyzer'
-import { analyzeProgram } from '@/shared/lib/pseint/insights'
-import { parseProgram } from '@/shared/lib/pseint/parser'
+import { extractInputFields } from './analyzer'
+import { analyzeProgram } from './insights'
+import { parseProgram } from './parser'
 
 const nestedSource = `Algoritmo DemoInsights
     Definir nombre Como Cadena;

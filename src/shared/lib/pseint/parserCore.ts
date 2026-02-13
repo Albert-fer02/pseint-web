@@ -1,4 +1,4 @@
-import type { BinaryOperator, PseintVarType } from '@/entities/pseint/model/types'
+import type { BinaryOperator, PseintVarType } from '../../../entities/pseint/model/types'
 
 export const DECLARATION_REGEX = /^Definir\s+(.+)\s+Como\s+(Cadena|Entero|Real|Logico|Caracter)\s*;?$/i
 export const CONSTANT_REGEX = /^Constante\s+([A-Za-z_][A-Za-z0-9_]*)\s*<-\s*(.+?)\s*;?$/i

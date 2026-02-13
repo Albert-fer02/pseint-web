@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { buildFlowchart } from '@/shared/lib/pseint/flowchart'
-import { parseProgram } from '@/shared/lib/pseint/parser'
+import { buildFlowchart } from './flowchart'
+import { parseProgram } from './parser'
 
 describe('buildFlowchart', () => {
   it('builds start and end nodes for a simple algorithm', () => {

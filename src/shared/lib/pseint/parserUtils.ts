@@ -1,4 +1,4 @@
-import type { BinaryOperator } from '@/entities/pseint/model/types'
+import type { BinaryOperator } from '../../../entities/pseint/model/types'
 
 export function findOperatorRightToLeft(
   value: string,

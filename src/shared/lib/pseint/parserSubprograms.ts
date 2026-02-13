@@ -3,16 +3,16 @@ import type {
   ProgramDeclaration,
   ProgramFunction,
   ProgramProcedure,
-} from '@/entities/pseint/model/types'
+} from '../../../entities/pseint/model/types'
 import {
   FUNCTION_HEADER_REGEX,
   PseintParseError,
   SUBPROCESS_HEADER_REGEX,
   SUBPROCESS_WITH_RETURN_HEADER_REGEX,
-} from '@/shared/lib/pseint/parserCore'
-import type { ParserState } from '@/shared/lib/pseint/parserCore'
-import { parseFunctionParameters } from '@/shared/lib/pseint/parserDeclarations'
-import { parseStatements } from '@/shared/lib/pseint/parserStatements'
+} from './parserCore'
+import type { ParserState } from './parserCore'
+import { parseFunctionParameters } from './parserDeclarations'
+import { parseStatements } from './parserStatements'
 
 export function parseFunction(state: ParserState): ProgramFunction {
   const headerLine = state.lines[state.index]

@@ -39,6 +39,7 @@ bun run test:coverage
 bun run test:e2e
 bun run build
 bun run check:bundle
+bun run perf:runtime
 ```
 
 Pipeline local completo:
@@ -112,6 +113,10 @@ src/
 - `docs/STACK_DECISION_2026Q1.md`
 
 Incluye tokens, motion, ergonomia movil, checklist de accesibilidad y reglas de coherencia visual.
+
+## Medicion de performance
+
+- Ejecuta bun run perf:runtime para medir parser+runtime con casos reales y synthetic load (avg/p50/p95 y heap delta).
 
 ## Notas de escalabilidad
 

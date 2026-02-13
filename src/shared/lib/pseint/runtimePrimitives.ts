@@ -1,5 +1,5 @@
-import type { ProgramDeclaration, PseintVarType, RuntimeScalar, RuntimeValue } from '@/entities/pseint/model/types'
-import { PseintRuntimeError } from '@/shared/lib/pseint/runtimeError'
+import type { ProgramDeclaration, PseintVarType, RuntimeScalar, RuntimeValue } from '../../../entities/pseint/model/types'
+import { PseintRuntimeError } from './runtimeError'
 
 const MAX_LOOP_ITERATIONS = 100_000
 

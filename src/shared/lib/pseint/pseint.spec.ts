@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { parseProgram } from '@/shared/lib/pseint/parser'
-import { executeProgram } from '@/shared/lib/pseint/interpreter'
+import { parseProgram } from './parser'
+import { executeProgram } from './interpreter'
 
 const source = `Algoritmo VariablesBasicas
     Definir nombre Como Cadena;

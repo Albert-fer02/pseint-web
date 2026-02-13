@@ -4,7 +4,7 @@ import type {
   ProgramDeclaration,
   ProgramFunction,
   ProgramProcedure,
-} from '@/entities/pseint/model/types'
+} from '../../../entities/pseint/model/types'
 import {
   ASSIGNMENT_REGEX,
   CALL_REGEX,
@@ -12,19 +12,19 @@ import {
   DECLARATION_REGEX,
   normalizeSource,
   PseintParseError,
-} from '@/shared/lib/pseint/parserCore'
-import type { ParserState } from '@/shared/lib/pseint/parserCore'
+} from './parserCore'
+import type { ParserState } from './parserCore'
 import {
   appendConstant,
   appendDeclarations,
-} from '@/shared/lib/pseint/parserDeclarations'
-import { parseStatements } from '@/shared/lib/pseint/parserStatements'
+} from './parserDeclarations'
+import { parseStatements } from './parserStatements'
 import {
   parseFunction,
   parseSubprocess,
-} from '@/shared/lib/pseint/parserSubprograms'
+} from './parserSubprograms'
 
-export { PseintParseError } from '@/shared/lib/pseint/parserCore'
+export { PseintParseError } from './parserCore'
 
 export function parseProgram(source: string): ProgramAst {
   const lines = normalizeSource(source)

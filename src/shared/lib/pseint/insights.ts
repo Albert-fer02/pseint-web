@@ -1,4 +1,4 @@
-import type { ProgramAst, ProgramInsights, Statement } from '@/entities/pseint/model/types'
+import type { ProgramAst, ProgramInsights, Statement } from '../../../entities/pseint/model/types'
 
 interface StatementStats {
   reads: number

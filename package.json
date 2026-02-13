@@ -15,6 +15,7 @@
     "test:e2e": "playwright test",
     "test:e2e:headed": "playwright test --headed",
     "check:bundle": "bun ./scripts/check-bundle-budget.mjs",
+    "perf:runtime": "vitest run tests/perf/runtime.perf.spec.ts --reporter=verbose",
     "ci": "bun run typecheck && bun run lint && bun run test:coverage && bun run build && bun run check:bundle"
   },
   "dependencies": {

@@ -1,4 +1,4 @@
-import type { Expression, ProgramAst, Statement, TargetRef } from '@/entities/pseint/model/types'
+import type { Expression, ProgramAst, Statement, TargetRef } from '../../../entities/pseint/model/types'
 
 interface MermaidBuilder {
   lines: string[]

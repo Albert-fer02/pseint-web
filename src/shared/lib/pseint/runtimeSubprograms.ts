@@ -9,17 +9,17 @@ import type {
   RuntimeValue,
   Statement,
   TargetRef,
-} from '@/entities/pseint/model/types'
+} from '../../../entities/pseint/model/types'
 import {
   cloneRuntimeValue,
   defaultValueByDeclaration,
   ensureArrayShapeMatchesDeclaration,
   inferArrayDimensions,
   inferScalarTypeFromValue,
-} from '@/shared/lib/pseint/runtimePrimitives'
-import { PseintRuntimeError } from '@/shared/lib/pseint/runtimeError'
-import { evaluateArrayIndices, evaluateConstants, getDeclarationWithScope } from '@/shared/lib/pseint/runtimeState'
-import type { RuntimeContext } from '@/shared/lib/pseint/runtimeTypes'
+} from './runtimePrimitives'
+import { PseintRuntimeError } from './runtimeError'
+import { evaluateArrayIndices, evaluateConstants, getDeclarationWithScope } from './runtimeState'
+import type { RuntimeContext } from './runtimeTypes'
 
 interface ResolvedCallArgument {
   value: RuntimeValue

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { PseintParseError } from '../../../shared/lib/pseint/parserCore'
+import { PseintParseError } from './parserCore'
 import { PseintRuntimeError, toPseintErrorDescriptor } from './runtimeError'
 
 describe('PseintRuntimeError', () => {
@@ -135,7 +135,7 @@ describe('toPseintErrorDescriptor', () => {
       expect(descriptor.code).toBe('PS_RUNTIME_LOOP_LIMIT')
       expect(descriptor.category).toBe('logic')
       expect(descriptor.context).toBe('ciclo')
-      expect(descriptor.hint).toContain('bucles infinitos')
+      expect(descriptor.hint).toContain('bucle')
     })
 
     it('infers unsupported feature error', () => {
