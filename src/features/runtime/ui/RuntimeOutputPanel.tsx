@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import type { RuntimeExecution } from '@/entities/pseint/model/types'
+import type { PseintErrorDescriptor } from '@/shared/lib/pseint/runtimeError'
 import { getPseintErrorHint } from '@/shared/lib/pseint/errorHints'
 import { RuntimeConsoleCard } from '@/features/runtime/ui/output/RuntimeConsoleCard'
 import { RuntimeTraceControls } from '@/features/runtime/ui/output/RuntimeTraceControls'
@@ -9,7 +10,7 @@ import { useRuntimeTracePlayback } from '@/features/runtime/ui/output/useRuntime
 
 interface RuntimeOutputPanelProps {
   execution: RuntimeExecution | null
-  error: string | null
+  error: PseintErrorDescriptor | null
   status: 'idle' | 'running' | 'success' | 'error'
 }
 
@@ -41,10 +42,16 @@ export function RuntimeOutputPanel({ execution, error, status }: RuntimeOutputPa
   }
 
   if (error) {
-    const hint = getPseintErrorHint(error)
+    const hint = error.hint ?? getPseintErrorHint(error.message)
+
     return (
       <div role="alert" className="space-y-2 rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2">
-        <p className="text-sm text-destructive">{error}</p>
+        <p className="text-xs font-semibold uppercase tracking-wide text-destructive/90">
+          {error.category} - {error.code}
+        </p>
+        <p className="text-sm text-destructive">{error.message}</p>
+        {error.line ? <p className="text-xs text-destructive/90">Linea: {error.line}</p> : null}
+        {error.context ? <p className="text-xs text-destructive/90">Contexto: {error.context}</p> : null}
         {hint ? <p className="text-xs text-destructive/90">Sugerencia: {hint}</p> : null}
       </div>
     )

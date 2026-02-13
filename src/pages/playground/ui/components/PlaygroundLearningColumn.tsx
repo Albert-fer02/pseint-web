@@ -1,5 +1,6 @@
 import { lazy, Suspense, type RefObject } from 'react'
 import type { ProgramInsights, RuntimeExecution, RuntimeInputField } from '@/entities/pseint/model/types'
+import type { PseintErrorDescriptor } from '@/shared/lib/pseint/runtimeError'
 import {
   getMobilePanelSectionId,
   getMobilePanelTabId,
@@ -65,7 +66,7 @@ interface PlaygroundLearningColumnProps {
   shouldRenderDiagram: boolean
   status: 'idle' | 'running' | 'success' | 'error'
   execution: RuntimeExecution | null
-  runtimeError: string | null
+  runtimeError: PseintErrorDescriptor | null
   flowchartPreview: string | null
   shouldHydrateDiagram: boolean
   onEnableDiagramHydration: () => void

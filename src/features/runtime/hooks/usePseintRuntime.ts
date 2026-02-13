@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react'
 import type { ProgramAst, RuntimeExecution } from '@/entities/pseint/model/types'
+import type { PseintErrorDescriptor } from '@/shared/lib/pseint/runtimeError'
 import type { WorkerResponse, WorkerRunRequest } from '@/shared/types/runtime'
 
 interface RuntimeSuccess {
@@ -13,7 +14,7 @@ type RuntimeStatus = 'idle' | 'running' | 'success' | 'error'
 export function usePseintRuntime() {
   const [status, setStatus] = useState<RuntimeStatus>('idle')
   const [result, setResult] = useState<RuntimeSuccess | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<PseintErrorDescriptor | null>(null)
 
   const run = useCallback(async (source: string, inputs: Record<string, string>) => {
     setStatus('running')
@@ -47,7 +48,7 @@ export function usePseintRuntime() {
 
         setStatus('error')
         setResult(null)
-        setError(response.payload.message)
+        setError(response.payload.error)
         worker.terminate()
         reject(new Error(response.payload.message))
       }
@@ -56,7 +57,15 @@ export function usePseintRuntime() {
         const errorMessage = event.message || 'Error desconocido al ejecutar el programa.'
         setStatus('error')
         setResult(null)
-        setError(errorMessage)
+        setError({
+          code: 'PS_SYSTEM_WORKER',
+          category: 'system',
+          source: 'system',
+          message: errorMessage,
+          hint: 'Recarga la pagina y vuelve a intentar. Si persiste, revisa la consola del navegador.',
+          line: null,
+          context: 'worker',
+        })
         worker.terminate()
         reject(new Error(errorMessage))
       }

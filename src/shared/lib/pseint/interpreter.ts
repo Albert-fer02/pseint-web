@@ -34,11 +34,13 @@ import {
   targetToInputKey,
 } from '@/shared/lib/pseint/runtimeState'
 import { executeCallableStatement, executeUserFunction } from '@/shared/lib/pseint/runtimeSubprograms'
+import { sanitizeRuntimeInputs } from '@/shared/lib/pseint/runtimeInputSanitizer'
 import type { RuntimeContext, RuntimeMetrics } from '@/shared/lib/pseint/runtimeTypes'
 
 const MAX_TRACE_STEPS = 2_500
 
 export function executeProgram(ast: ProgramAst, rawInputs: Record<string, string>): RuntimeExecution {
+  const sanitizedInputs = sanitizeRuntimeInputs(rawInputs)
   const declarations = new Map(ast.declarations.map((declaration) => [declaration.name, declaration]))
   const constants = new Map<string, RuntimeScalar>()
   const variables: Record<string, RuntimeValue> = {}
@@ -62,7 +64,7 @@ export function executeProgram(ast: ProgramAst, rawInputs: Record<string, string
     declarations,
     constants,
     variables,
-    inputs: rawInputs,
+    inputs: sanitizedInputs,
     metrics,
     parent: null,
   }

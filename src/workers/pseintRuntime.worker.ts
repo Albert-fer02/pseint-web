@@ -2,15 +2,20 @@
 import { buildFlowchart } from '@/shared/lib/pseint/flowchart'
 import { executeProgram } from '@/shared/lib/pseint/interpreter'
 import { parseProgram } from '@/shared/lib/pseint/parser'
+import { toPseintErrorDescriptor } from '@/shared/lib/pseint/runtimeError'
 import type { WorkerResponse, WorkerRunRequest } from '@/shared/types/runtime'
 
 self.onmessage = (event: MessageEvent<WorkerRunRequest>) => {
   const request = event.data
 
   if (request.type !== 'RUN_PROGRAM') {
+    const unsupportedEventError = toPseintErrorDescriptor(new Error('Tipo de evento no soportado.'))
     const response: WorkerResponse = {
       type: 'RUN_ERROR',
-      payload: { message: 'Tipo de evento no soportado.' },
+      payload: {
+        message: unsupportedEventError.message,
+        error: unsupportedEventError,
+      },
     }
     self.postMessage(response)
     return
@@ -31,11 +36,13 @@ self.onmessage = (event: MessageEvent<WorkerRunRequest>) => {
     }
 
     self.postMessage(response)
-  } catch (error) {
+  } catch (runtimeError) {
+    const descriptor = toPseintErrorDescriptor(runtimeError)
     const response: WorkerResponse = {
       type: 'RUN_ERROR',
       payload: {
-        message: error instanceof Error ? error.message : 'Error desconocido de runtime.',
+        message: descriptor.message,
+        error: descriptor,
       },
     }
     self.postMessage(response)
